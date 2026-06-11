@@ -1,0 +1,7 @@
+# switchbot_desktop のランタイムは mise で固定する（node と rust）。
+# pnpm は corepack 管理（package.json の "packageManager" を参照）なので mise には入れない。
+[tools]
+node = "24.13.0"
+# rust は内部で rustup を使う。クロスコンパイル用 target は将来こう書く:
+#   rust = { version = "stable", targets = "x86_64-apple-darwin,x86_64-pc-windows-msvc" }
+rust = "stable"
