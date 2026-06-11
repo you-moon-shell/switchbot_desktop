@@ -12,7 +12,7 @@ use adapters::secret::KeyringSecretStore;
 use adapters::switchbot::SwitchBotApiGateway;
 use ports::{SecretStore, SwitchBotGateway};
 use state::AppState;
-use usecases::AuthUseCase;
+use usecases::CredentialUseCases;
 
 // TODO: オンボーディング画面の実装が終わったら削除する（雛形のデモコマンド）
 #[tauri::command]
@@ -26,7 +26,7 @@ pub fn run() {
     let gateway: Arc<dyn SwitchBotGateway> = Arc::new(SwitchBotApiGateway::new());
     let secrets: Arc<dyn SecretStore> = Arc::new(KeyringSecretStore::new());
     let app_state = AppState {
-        auth: AuthUseCase::new(gateway, secrets),
+        credential: CredentialUseCases::new(gateway, secrets),
     };
 
     tauri::Builder::default()
@@ -34,9 +34,9 @@ pub fn run() {
         .manage(app_state)
         .invoke_handler(tauri::generate_handler![
             greet,
-            commands::auth::save_credentials,
-            commands::auth::has_credentials,
-            commands::auth::logout,
+            commands::credential::save_credentials,
+            commands::credential::has_credentials,
+            commands::credential::logout,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

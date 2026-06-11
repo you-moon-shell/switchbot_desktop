@@ -1,3 +1,3 @@
-pub mod auth;
+pub mod credential;
 
-pub use auth::{AuthError, AuthUseCase};
+pub use credential::{CredentialError, CredentialUseCases};

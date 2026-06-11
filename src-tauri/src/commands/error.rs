@@ -1,7 +1,7 @@
 use serde::Serialize;
 
 use crate::ports::GatewayError;
-use crate::usecases::AuthError;
+use crate::usecases::CredentialError;
 
 /// フロントへ返すエラー（JSON にシリアライズされて invoke の reject に渡る）。
 ///
@@ -25,15 +25,15 @@ pub enum ErrorCode {
     Unexpected,
 }
 
-impl From<AuthError> for CommandError {
-    fn from(err: AuthError) -> Self {
+impl From<CredentialError> for CommandError {
+    fn from(err: CredentialError) -> Self {
         let code = match &err {
-            AuthError::EmptyInput => ErrorCode::EmptyInput,
-            AuthError::Gateway(GatewayError::Unauthorized) => ErrorCode::Unauthorized,
-            AuthError::Gateway(GatewayError::RateLimited) => ErrorCode::RateLimited,
-            AuthError::Gateway(GatewayError::Network(_)) => ErrorCode::Network,
-            AuthError::Gateway(GatewayError::Unexpected(_)) => ErrorCode::Unexpected,
-            AuthError::Secret(_) => ErrorCode::Secret,
+            CredentialError::EmptyInput => ErrorCode::EmptyInput,
+            CredentialError::Gateway(GatewayError::Unauthorized) => ErrorCode::Unauthorized,
+            CredentialError::Gateway(GatewayError::RateLimited) => ErrorCode::RateLimited,
+            CredentialError::Gateway(GatewayError::Network(_)) => ErrorCode::Network,
+            CredentialError::Gateway(GatewayError::Unexpected(_)) => ErrorCode::Unexpected,
+            CredentialError::Secret(_) => ErrorCode::Secret,
         };
         Self {
             code,

@@ -43,7 +43,7 @@ SwitchBotデスクトップアプリの Rustコアを、**外界（HTTP API・SQ
 
 ```
         ┌──────────── usecases（ユースケース層）────────────┐
-        │ AuthUseCase / DeviceUseCase / TelemetryUseCase ... │
+        │ CredentialUseCases / DeviceUseCases / TelemetryUseCases ... │
         │ ※ ports(trait)にだけ依存。実装の中身は知らない     │
         └──────▲──────────────▲──────────────────▲──────────┘
                │ implements    │ implements       │ implements
@@ -84,10 +84,10 @@ src-tauri/src/
 │   ├─ event_publisher.rs     ⬜ trait EventPublisher（フロント通知の抽象。§12）
 │   └─ clock.rs               ⬜ trait Clock（時刻の抽象。Epic D で必要なら。§12）
 ├─ usecases/                  ユースケース（ports にだけ依存）
-│   ├─ auth.rs                ✅ AuthUseCase + AuthError（Fakeによる単体テスト5本付き）
-│   ├─ device.rs              ⬜ DeviceUseCase
-│   ├─ telemetry.rs           ⬜ TelemetryUseCase
-│   └─ automation.rs          ⬜ AutomationUseCase
+│   ├─ credential.rs          ✅ CredentialUseCases + CredentialError（Fakeによる単体テスト5本付き）
+│   ├─ device.rs              ⬜ DeviceUseCases
+│   ├─ telemetry.rs           ⬜ TelemetryUseCases
+│   └─ automation.rs          ⬜ AutomationUseCases
 ├─ adapters/                  ports の実装（具象）
 │   ├─ switchbot/             ✅ SwitchBotApiGateway
 │   │   ├─ constants.rs            BASE_URL（pub(super)）
@@ -99,7 +99,7 @@ src-tauri/src/
 │   ├─ persistence/           ⬜ Sqlite*Repository（sqlx）
 │   └─ events/                ⬜ TauriEventPublisher（emit で WebView へ push）
 ├─ commands/                  invoke受け口（usecases を呼ぶ。薄く委譲するだけ）
-│   ├─ auth.rs                ✅ save_credentials / has_credentials / logout
+│   ├─ credential.rs          ✅ save_credentials / has_credentials / logout
 │   └─ error.rs               ✅ CommandError { code, message }（Serialize、フロント向け）
 ├─ state.rs                   ✅ AppState（DI済み usecase の入れ物。manage で登録）
 ├─ lib.rs                     ✅ Composition Root（DI配線）+ Builder 起動
@@ -147,8 +147,8 @@ reqwest::Error                          （実装詳細。adapterの外に出さ
 GatewayError::Network("...")            ports層の型（Unauthorized/RateLimited/Network/Unexpected）
   │ ? + #[from]（自動翻訳）
   ▼
-AuthError::Gateway(...)                 usecase層の型（+ EmptyInput / Secret）
-  │ From<AuthError>（commandで翻訳）
+CredentialError::Gateway(...)           usecase層の型（+ EmptyInput / Secret）
+  │ From<CredentialError>（commandで翻訳）
   ▼
 CommandError { code, message }          Serialize → JSON → フロントの invoke().catch(e)
 ```
@@ -197,7 +197,7 @@ sign = upper( base64( HMAC-SHA256( key = secret, msg = token + t + nonce ) ) )
 
 | Epic             | 主に触るモジュール                                                                                                     |
 | ---------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| **A 認証**       | `commands(auth)` `usecases/auth` `ports/switchbot_gateway` `ports/secret_store` `adapters/switchbot` `adapters/secret` |
+| **A 認証**       | `commands(credential)` `usecases/credential` `ports/switchbot_gateway` `ports/secret_store` `adapters/switchbot` `adapters/secret` |
 | B デバイス操作   | `usecases/device` `ports/switchbot_gateway` `adapters/switchbot`                                                       |
 | C センサー可視化 | `poller` `usecases/telemetry` `ports/telemetry_repository` `ports/event_publisher` `adapters/persistence` `adapters/events` |
 | D 自動化         | `scheduler` `usecases/automation` `ports/automation_repository` `ports/clock(必要なら)` `poller(条件)`                 |
@@ -222,7 +222,7 @@ sign = upper( base64( HMAC-SHA256( key = secret, msg = token + t + nonce ) ) )
 ## 11. 命名・コード規約
 
 - ファイル名は型名の snake_case（例：`switchbot_gateway.rs` → `SwitchBotGateway`）。1ファイル=1 trait/型を基本。
-- `usecases/` 配下はディレクトリが役割を示すため、ファイルは領域名のみ（`usecases/auth.rs` → `AuthUseCase`）。
+- `usecases/` 配下はディレクトリが役割を示すため、ファイルは領域名のみ（`usecases/credential.rs` → `CredentialUseCases`）。
 - `adapters/secret/` と `ports/secret_store.rs` は単数 "secret" で統一。
 - モデルのファイル名も単数（`models/credential.rs`。型名は `Credentials` のまま）。
 - 定数はモジュール内の `constants.rs` に切り出す（`const.rs` は予約語のため不可）。公開範囲は `pub(super)` で親モジュール（アダプタ内）に限定し、実装詳細を漏らさない。
@@ -242,7 +242,7 @@ sign = upper( base64( HMAC-SHA256( key = secret, msg = token + t + nonce ) ) )
 
 ### 駆動ポートの trait を作らない（決定済み）
 
-`AuthUseCase` 等の**公開メソッドそのものを駆動ポート**とする。駆動側の trait が活きるのは呼び出し側を差し替えたいとき（CLI版とGUI版の共用等）だが、本アプリの呼び出し側は commands 一本。被駆動側だけ trait 化する非対称は意図的（テストで差し替えたいのは API/キーチェーン側だから）。
+`CredentialUseCases` 等の**公開メソッドそのものを駆動ポート**とする。駆動側の trait が活きるのは呼び出し側を差し替えたいとき（CLI版とGUI版の共用等）だが、本アプリの呼び出し側は commands 一本。被駆動側だけ trait 化する非対称は意図的（テストで差し替えたいのは API/キーチェーン側だから）。
 
 ### 非採用（過剰設計の防止）
 
@@ -265,7 +265,7 @@ sign = upper( base64( HMAC-SHA256( key = secret, msg = token + t + nonce ) ) )
 - `has_credentials` は bool のみ返す＝資格情報そのものをフロントへ渡す経路を作らない。
 - テスト 6本グリーン：
   - 署名が公式 Python サンプルと一致（`signature.rs`）
-  - AuthUseCase×5（AC-1: 検証成功で保存・トリム / AC-2: 401は保存しない / AC-5: ネット断は401と区別 / 空入力はAPI呼ばず拒否 / has_credentials・logout の状態反映）— Fake注入により実トークン・実キーチェーン不要
+  - CredentialUseCases のテスト×5（AC-1: 検証成功で保存・トリム / AC-2: 401は保存しない / AC-5: ネット断は401と区別 / 空入力はAPI呼ばず拒否 / has_credentials・logout の状態反映）— Fake注入により実トークン・実キーチェーン不要
 - 未着手：フロント（オンボーディング画面）、`tracing` によるログ、Epic B〜F の全モジュール。
 
 ## 付録：Rust 初心者メモ

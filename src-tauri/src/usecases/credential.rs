@@ -9,14 +9,14 @@ use crate::ports::{GatewayError, SecretStore, SecretStoreError, SwitchBotGateway
 ///
 /// 具象には依存せず、2つの port（trait）にだけ依存する。
 /// 本番は SwitchBotApiGateway + KeyringSecretStore、テストは Fake を注入する。
-pub struct AuthUseCase {
+pub struct CredentialUseCases {
     gateway: Arc<dyn SwitchBotGateway>,
     secrets: Arc<dyn SecretStore>,
 }
 
 /// 認証ユースケースのエラー。
 #[derive(Debug, Error)]
-pub enum AuthError {
+pub enum CredentialError {
     /// 入力が空（トリム後）。API を呼ぶまでもなく弾く。
     #[error("トークンとシークレットを入力してください")]
     EmptyInput,
@@ -30,7 +30,7 @@ pub enum AuthError {
     Secret(#[from] SecretStoreError),
 }
 
-impl AuthUseCase {
+impl CredentialUseCases {
     pub fn new(gateway: Arc<dyn SwitchBotGateway>, secrets: Arc<dyn SecretStore>) -> Self {
         Self { gateway, secrets }
     }
@@ -40,13 +40,13 @@ impl AuthUseCase {
     /// - 前後の空白はトリムする（要件エッジケース）
     /// - 空入力は API を呼ばずに弾く
     /// - 検証失敗（401/ネットワーク）時は一切保存しない
-    pub async fn validate_and_store(&self, token: &str, secret: &str) -> Result<(), AuthError> {
+    pub async fn validate_and_store(&self, token: &str, secret: &str) -> Result<(), CredentialError> {
         let creds = Credentials {
             token: token.trim().to_string(),
             secret: secret.trim().to_string(),
         };
         if creds.token.is_empty() || creds.secret.is_empty() {
-            return Err(AuthError::EmptyInput);
+            return Err(CredentialError::EmptyInput);
         }
 
         self.gateway.validate_credentials(&creds).await?;
@@ -57,12 +57,12 @@ impl AuthUseCase {
     /// 資格情報が保存済みかどうか（要件 A1/A5 の起動時判定）。
     ///
     /// フロントには bool しか返さない（資格情報そのものは渡さない）。
-    pub fn has_credentials(&self) -> Result<bool, AuthError> {
+    pub fn has_credentials(&self) -> Result<bool, CredentialError> {
         Ok(self.secrets.load()?.is_some())
     }
 
     /// ログアウト＝資格情報を削除する（要件 A6）。
-    pub fn logout(&self) -> Result<(), AuthError> {
+    pub fn logout(&self) -> Result<(), CredentialError> {
         self.secrets.delete()?;
         Ok(())
     }
@@ -133,7 +133,7 @@ mod tests {
     #[tokio::test]
     async fn valid_credentials_are_trimmed_and_saved() {
         let store = Arc::new(InMemorySecretStore::default());
-        let usecase = AuthUseCase::new(
+        let usecase = CredentialUseCases::new(
             Arc::new(FakeGateway::new(Behavior::Success)),
             store.clone(),
         );
@@ -152,7 +152,7 @@ mod tests {
     #[tokio::test]
     async fn unauthorized_credentials_are_not_saved() {
         let store = Arc::new(InMemorySecretStore::default());
-        let usecase = AuthUseCase::new(
+        let usecase = CredentialUseCases::new(
             Arc::new(FakeGateway::new(Behavior::Unauthorized)),
             store.clone(),
         );
@@ -161,7 +161,7 @@ mod tests {
 
         assert!(matches!(
             result,
-            Err(AuthError::Gateway(GatewayError::Unauthorized))
+            Err(CredentialError::Gateway(GatewayError::Unauthorized))
         ));
         assert!(store.saved.lock().unwrap().is_none());
     }
@@ -170,7 +170,7 @@ mod tests {
     #[tokio::test]
     async fn network_error_is_distinguished_and_not_saved() {
         let store = Arc::new(InMemorySecretStore::default());
-        let usecase = AuthUseCase::new(
+        let usecase = CredentialUseCases::new(
             Arc::new(FakeGateway::new(Behavior::NetworkDown)),
             store.clone(),
         );
@@ -179,7 +179,7 @@ mod tests {
 
         assert!(matches!(
             result,
-            Err(AuthError::Gateway(GatewayError::Network(_)))
+            Err(CredentialError::Gateway(GatewayError::Network(_)))
         ));
         assert!(store.saved.lock().unwrap().is_none());
     }
@@ -188,14 +188,14 @@ mod tests {
     #[tokio::test]
     async fn empty_input_is_rejected_without_calling_api() {
         let gateway = Arc::new(FakeGateway::new(Behavior::Success));
-        let usecase = AuthUseCase::new(
+        let usecase = CredentialUseCases::new(
             gateway.clone(),
             Arc::new(InMemorySecretStore::default()),
         );
 
         let result = usecase.validate_and_store("   ", "sec").await;
 
-        assert!(matches!(result, Err(AuthError::EmptyInput)));
+        assert!(matches!(result, Err(CredentialError::EmptyInput)));
         assert!(!*gateway.called.lock().unwrap());
     }
 
@@ -203,7 +203,7 @@ mod tests {
     #[tokio::test]
     async fn has_credentials_and_logout_reflect_store_state() {
         let store = Arc::new(InMemorySecretStore::default());
-        let usecase = AuthUseCase::new(
+        let usecase = CredentialUseCases::new(
             Arc::new(FakeGateway::new(Behavior::Success)),
             store.clone(),
         );

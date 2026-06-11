@@ -15,7 +15,7 @@ pub async fn save_credentials(
     secret: String,
 ) -> Result<(), CommandError> {
     state
-        .auth
+        .credential
         .validate_and_store(&token, &secret)
         .await
         .map_err(CommandError::from)
@@ -24,11 +24,11 @@ pub async fn save_credentials(
 /// 起動時判定: 資格情報が保存済みか（A1/A5）。bool しか返さない。
 #[tauri::command]
 pub fn has_credentials(state: State<'_, AppState>) -> Result<bool, CommandError> {
-    state.auth.has_credentials().map_err(CommandError::from)
+    state.credential.has_credentials().map_err(CommandError::from)
 }
 
 /// ログアウト: 資格情報を削除する（A6）。
 #[tauri::command]
 pub fn logout(state: State<'_, AppState>) -> Result<(), CommandError> {
-    state.auth.logout().map_err(CommandError::from)
+    state.credential.logout().map_err(CommandError::from)
 }
