@@ -2,7 +2,7 @@
 
 | 項目       | 内容                                                                    |
 | ---------- | ----------------------------------------------------------------------- |
-| ステータス | Active（**Epic A のバックエンド実装完了・テスト済み**。§12 参照）       |
+| ステータス | Active（**Epic A のバックエンド実装完了・テスト済み**。§13 参照）       |
 | 作成日     | 2026-06-02 / 最終更新 2026-06-02                                        |
 | 対象       | Tauri v2 の Rustコア（バックエンド）。フロント(WebView)は文脈として記載 |
 | スタイル   | Ports & Adapters（ヘキサゴナル / クリーンアーキテクチャ）               |
@@ -80,7 +80,9 @@ src-tauri/src/
 │   ├─ device_repository.rs   ⬜ trait DeviceRepository
 │   ├─ telemetry_repository.rs ⬜ trait TelemetryRepository
 │   ├─ automation_repository.rs ⬜ trait AutomationRepository
-│   └─ setting_repository.rs ⬜ trait SettingRepository
+│   ├─ setting_repository.rs  ⬜ trait SettingRepository
+│   ├─ event_publisher.rs     ⬜ trait EventPublisher（フロント通知の抽象。§12）
+│   └─ clock.rs               ⬜ trait Clock（時刻の抽象。Epic D で必要なら。§12）
 ├─ usecases/                  ユースケース（ports にだけ依存）
 │   ├─ auth.rs                ✅ AuthUseCase + AuthError（Fakeによる単体テスト5本付き）
 │   ├─ device.rs              ⬜ DeviceUseCase
@@ -94,15 +96,15 @@ src-tauri/src/
 │   ├─ secret/                ✅ KeyringSecretStore
 │   │   ├─ constants.rs            SERVICE / ACCOUNT（pub(super)）
 │   │   └─ keyring_secret_store.rs JSON1エントリ保存。NoEntry→Ok(None)/delete冪等
-│   └─ persistence/           ⬜ Sqlite*Repository（sqlx）
+│   ├─ persistence/           ⬜ Sqlite*Repository（sqlx）
+│   └─ events/                ⬜ TauriEventPublisher（emit で WebView へ push）
 ├─ commands/                  invoke受け口（usecases を呼ぶ。薄く委譲するだけ）
 │   ├─ auth.rs                ✅ save_credentials / has_credentials / logout
 │   └─ error.rs               ✅ CommandError { code, message }（Serialize、フロント向け）
 ├─ state.rs                   ✅ AppState（DI済み usecase の入れ物。manage で登録）
 ├─ lib.rs                     ✅ Composition Root（DI配線）+ Builder 起動
-├─ poller.rs                  ⬜ 【単一】定期取得 → DB保存 → イベント発行
-├─ scheduler.rs               ⬜ tokio-cron-scheduler（時刻/条件トリガ）
-└─ events.rs                  ⬜ フロントへの push（emit）
+├─ poller.rs                  ⬜ 【単一】定期取得 → DB保存 → イベント発行（駆動アダプタ）
+└─ scheduler.rs               ⬜ tokio-cron-scheduler（時刻/条件トリガ。駆動アダプタ）
 ```
 
 ## 5. レイヤーの責務
@@ -197,8 +199,8 @@ sign = upper( base64( HMAC-SHA256( key = secret, msg = token + t + nonce ) ) )
 | ---------------- | ---------------------------------------------------------------------------------------------------------------------- |
 | **A 認証**       | `commands(auth)` `usecases/auth` `ports/switchbot_gateway` `ports/secret_store` `adapters/switchbot` `adapters/secret` |
 | B デバイス操作   | `usecases/device` `ports/switchbot_gateway` `adapters/switchbot`                                                       |
-| C センサー可視化 | `poller` `usecases/telemetry` `ports/telemetry_repository` `adapters/persistence` `events`                             |
-| D 自動化         | `scheduler` `usecases/automation` `ports/automation_repository` `poller(条件)`                                         |
+| C センサー可視化 | `poller` `usecases/telemetry` `ports/telemetry_repository` `ports/event_publisher` `adapters/persistence` `adapters/events` |
+| D 自動化         | `scheduler` `usecases/automation` `ports/automation_repository` `ports/clock(必要なら)` `poller(条件)`                 |
 | E 常駐           | `lib.rs`（tray/ウィンドウ生存管理）                                                                                    |
 | F 横断           | `adapters/switchbot`（レート管理） `events` エラー設計                                                                 |
 
@@ -227,7 +229,35 @@ sign = upper( base64( HMAC-SHA256( key = secret, msg = token + t + nonce ) ) )
 - **trait の命名**：アーキテクチャ上の役割の契約は役割名詞（`Gateway` / `Repository` / `Store`）。汎用能力を表す trait を作る場合は能力風の命名（標準ライブラリの `Clone` / `Iterator` などに倣う）。
 - 具象 adapter は「実装技術名 + port名」（`KeyringSecretStore`, `SwitchBotApiGateway`）。抽象/具象が名前だけで区別できる。
 
-## 12. 実装状況（2026-06-02 時点）
+## 12. 将来の拡張方針：追加予定の ports と「非採用」の決定
+
+原則は一本：**「コアが外界に触れたくなったら、それが何であれ（API・DB・通知・時刻）port を切る。層は増やさない」**。
+
+### 追加予定の ports（必要になった Epic で導入）
+
+| port | 導入時期 | 理由 |
+| --- | --- | --- |
+| `ports/event_publisher.rs`<br>`trait EventPublisher` | **Epic C** | ポーラー後の「フロントへ通知」も外界。usecase が Tauri の `emit` を直接呼ぶとコアが Tauri に依存してしまうため、通知も port + adapter（`adapters/events/` = Tauri emit 実装）のペアにする。テストでは InMemory 実装で「通知されたか」を検証できる |
+| `ports/clock.rs`<br>`trait Clock` | **Epic D**（必要なら） | 自動化のクールダウン/ヒステリシスは時刻で分岐するロジック。`SystemTime::now()` をコアで直接呼ぶと「30分後」をテストできない。FakeClock で時間を進めて検証する。※署名の `t` は外界との約束なので adapter 内の実時刻のままで良い——**コアのロジックが時刻で分岐するときだけ** port 化する |
+
+### 駆動ポートの trait を作らない（決定済み）
+
+`AuthUseCase` 等の**公開メソッドそのものを駆動ポート**とする。駆動側の trait が活きるのは呼び出し側を差し替えたいとき（CLI版とGUI版の共用等）だが、本アプリの呼び出し側は commands 一本。被駆動側だけ trait 化する非対称は意図的（テストで差し替えたいのは API/キーチェーン側だから）。
+
+### 非採用（過剰設計の防止）
+
+| 候補 | 判定 | 理由 |
+| --- | --- | --- |
+| ドメインサービス層 | 不採用 | ドメインロジックが薄い。必要になれば `models/` に関数を足す |
+| CQRS / ドメインイベント | 不採用 | 単一ユーザーのデスクトップアプリに読み書き分離の利益なし |
+| トランザクション抽象（UnitOfWork） | 不採用 | SQLite の単純な書込のみ。sqlx のトランザクションを adapter 内で使えば足りる |
+| DI コンテナライブラリ | 不採用 | 手動配線（Composition Root）で全依存が目で追える方が良い |
+
+### commands 層の応答 DTO（Epic B から）
+
+デバイス一覧などを返すときは、ドメインモデル（`models::Device`）をそのままフロントへ返さず、**commands 層に Serialize 可能な DTO**（例: `DeviceDto`）を定義して翻訳する。ドメインの変更がフロントを直接壊さないようにする（`CommandError` の正常系版。新しい層ではなく駆動アダプタの語彙の拡張）。
+
+## 13. 実装状況（2026-06-02 時点）
 
 **Epic A のバックエンドが完了**（ports → adapters → usecases → commands → lib.rs 配線）。
 
