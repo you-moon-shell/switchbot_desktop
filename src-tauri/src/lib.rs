@@ -1,4 +1,5 @@
 // アプリのモジュール（ヘキサゴナル構成）
+pub mod adapters;
 pub mod models;
 pub mod ports;
 
