@@ -35,12 +35,12 @@ impl CredentialUseCases {
         Self { gateway, secrets }
     }
 
-    /// 入力された資格情報を検証し、成功した場合のみ保存する（要件 A3/A4）。
+    /// 資格情報を検証し、成功した場合のみ保存する（要件 A3/A4）。検証なしの保存経路は持たない。
     ///
     /// - 前後の空白はトリムする（要件エッジケース）
     /// - 空入力は API を呼ばずに弾く
     /// - 検証失敗（401/ネットワーク）時は一切保存しない
-    pub async fn validate_and_store(&self, token: &str, secret: &str) -> Result<(), CredentialError> {
+    pub async fn save(&self, token: &str, secret: &str) -> Result<(), CredentialError> {
         let creds = Credentials {
             token: token.trim().to_string(),
             secret: secret.trim().to_string(),
@@ -57,12 +57,12 @@ impl CredentialUseCases {
     /// 資格情報が保存済みかどうか（要件 A1/A5 の起動時判定）。
     ///
     /// フロントには bool しか返さない（資格情報そのものは渡さない）。
-    pub fn has_credentials(&self) -> Result<bool, CredentialError> {
+    pub fn exists(&self) -> Result<bool, CredentialError> {
         Ok(self.secrets.load()?.is_some())
     }
 
-    /// ログアウト＝資格情報を削除する（要件 A6）。
-    pub fn logout(&self) -> Result<(), CredentialError> {
+    /// 資格情報を削除する（要件 A6）。
+    pub fn delete(&self) -> Result<(), CredentialError> {
         self.secrets.delete()?;
         Ok(())
     }
@@ -139,7 +139,7 @@ mod tests {
         );
 
         usecase
-            .validate_and_store("  tok  ", "\tsec\n")
+            .save("  tok  ", "\tsec\n")
             .await
             .unwrap();
 
@@ -157,7 +157,7 @@ mod tests {
             store.clone(),
         );
 
-        let result = usecase.validate_and_store("tok", "sec").await;
+        let result = usecase.save("tok", "sec").await;
 
         assert!(matches!(
             result,
@@ -175,7 +175,7 @@ mod tests {
             store.clone(),
         );
 
-        let result = usecase.validate_and_store("tok", "sec").await;
+        let result = usecase.save("tok", "sec").await;
 
         assert!(matches!(
             result,
@@ -193,27 +193,27 @@ mod tests {
             Arc::new(InMemorySecretStore::default()),
         );
 
-        let result = usecase.validate_and_store("   ", "sec").await;
+        let result = usecase.save("   ", "sec").await;
 
         assert!(matches!(result, Err(CredentialError::EmptyInput)));
         assert!(!*gateway.called.lock().unwrap());
     }
 
-    /// A1/A5: has_credentials は保存状態を反映する。A6: logout で消える。
+    /// A1/A5: exists は保存状態を反映する。A6: delete で消える。
     #[tokio::test]
-    async fn has_credentials_and_logout_reflect_store_state() {
+    async fn exists_and_delete_reflect_store_state() {
         let store = Arc::new(InMemorySecretStore::default());
         let usecase = CredentialUseCases::new(
             Arc::new(FakeGateway::new(Behavior::Success)),
             store.clone(),
         );
 
-        assert!(!usecase.has_credentials().unwrap());
+        assert!(!usecase.exists().unwrap());
 
-        usecase.validate_and_store("tok", "sec").await.unwrap();
-        assert!(usecase.has_credentials().unwrap());
+        usecase.save("tok", "sec").await.unwrap();
+        assert!(usecase.exists().unwrap());
 
-        usecase.logout().unwrap();
-        assert!(!usecase.has_credentials().unwrap());
+        usecase.delete().unwrap();
+        assert!(!usecase.exists().unwrap());
     }
 }

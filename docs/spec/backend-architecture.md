@@ -99,7 +99,7 @@ src-tauri/src/
 │   ├─ persistence/           ⬜ Sqlite*Repository（sqlx）
 │   └─ events/                ⬜ TauriEventPublisher（emit で WebView へ push）
 ├─ commands/                  invoke受け口（usecases を呼ぶ。薄く委譲するだけ）
-│   ├─ credential.rs          ✅ save_credentials / has_credentials / logout
+│   ├─ credential.rs          ✅ save_credentials / has_credentials / delete_credentials
 │   └─ error.rs               ✅ CommandError { code, message }（Serialize、フロント向け）
 ├─ state.rs                   ✅ AppState（DI済み usecase の入れ物。manage で登録）
 ├─ lib.rs                     ✅ Composition Root（DI配線）+ Builder 起動
@@ -261,11 +261,11 @@ sign = upper( base64( HMAC-SHA256( key = secret, msg = token + t + nonce ) ) )
 
 **Epic A のバックエンドが完了**（ports → adapters → usecases → commands → lib.rs 配線）。
 
-- 公開 invoke コマンド：`save_credentials(token, secret)` / `has_credentials()` / `logout()`（＋雛形デモの `greet`。フロント実装時に削除予定）
+- 公開 invoke コマンド：`save_credentials(token, secret)` / `has_credentials()` / `delete_credentials()`（＋雛形デモの `greet`。フロント実装時に削除予定）
 - `has_credentials` は bool のみ返す＝資格情報そのものをフロントへ渡す経路を作らない。
 - テスト 6本グリーン：
   - 署名が公式 Python サンプルと一致（`signature.rs`）
-  - CredentialUseCases のテスト×5（AC-1: 検証成功で保存・トリム / AC-2: 401は保存しない / AC-5: ネット断は401と区別 / 空入力はAPI呼ばず拒否 / has_credentials・logout の状態反映）— Fake注入により実トークン・実キーチェーン不要
+  - CredentialUseCases のテスト×5（AC-1: 検証成功で保存・トリム / AC-2: 401は保存しない / AC-5: ネット断は401と区別 / 空入力はAPI呼ばず拒否 / exists・delete の状態反映）— Fake注入により実トークン・実キーチェーン不要
 - 未着手：フロント（オンボーディング画面）、`tracing` によるログ、Epic B〜F の全モジュール。
 
 ## 付録：Rust 初心者メモ
