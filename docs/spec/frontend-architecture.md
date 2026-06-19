@@ -13,6 +13,7 @@
 - **feature = Epic = バックエンドの usecase** で縦に切り、バックエンドと鏡像の構造にする。
 - 依存は一方向のみ。feature 同士は依存しない。
 - WebView は非特権（バックエンド設計の信頼境界の外）。資格情報そのものには一切触れない。Rust との接点は `invoke` / `listen` の2本だけで、その境界は `lib/ipc` が一手に引き受ける。
+- 見た目は **Liquid Glass（グラスモーフィズム）・ダーク固定**。出典の CodePen UI kit からデザイントークンと部品を抽出し、`index.css`（トークン＋グラスCSS）＋ `components/ui`（自作の軽量グラス部品）に落とす。shadcn/ui は不採用（グラスは CSS 主導で被せる旨味が薄く、依存も増えるため。複雑な a11y プリミティブが要る時だけ Radix を単体採用）。
 
 ## 2. ディレクトリ構成（bulletproof-react 準拠）
 
@@ -33,13 +34,13 @@ src/
 │       │   └─ OnboardingForm.tsx Token/Secret 入力フォーム
 │       └─ index.ts               公開API（外に見せるものだけ re-export）
 ├─ components/                共有UIコンポーネント
-│   └─ ui/                      shadcn/ui の生成先
+│   └─ ui/                      自作グラスUI部品（GlassBackground/Card/Button/Input/Field/Badge/Switch）
 ├─ hooks/                     共有 hooks（機能横断のもののみ）
 ├─ lib/                       基盤・ユーティリティ
 │   ├─ ipc/
 │   │   ├─ invoke.ts            型付き invoke ラッパ（エラーを CommandError に正規化）
 │   │   └─ types.ts             CommandError / ErrorCode（Rust 側と対の型）
-│   └─ utils.ts                 cn() 等
+│   └─ utils.ts                 cn()（依存ゼロの軽量実装。tailwind-merge は使わない）
 └─ main.tsx                   エントリ（app を mount するだけ）
 ```
 
@@ -61,7 +62,7 @@ app（routes 含む） → features → components / hooks / lib
 | `app/routes/` | feature を組み合わせてページにする（薄く。ロジック禁止）     | 「合成と配置」   |
 | `app/`        | ルーター配線・プロバイダ・ガード                             | 「骨格」         |
 | `features/`   | 機能の本体（UI部品・hooks・invoke 呼び出し）                 | 「機能の所有者」 |
-| `components/` | 機能横断の UI 部品（shadcn/ui 含む）                         | 「共有部品」     |
+| `components/` | 機能横断の UI 部品（自作グラス部品）                         | 「共有部品」     |
 | `hooks/`      | 機能横断の hooks                                             | 「共有ロジック」 |
 | `lib/`        | 基盤（ipc・ユーティリティ）。Rust との境界はここ             | 「土台」         |
 
@@ -105,7 +106,7 @@ app（routes 含む） → features → components / hooks / lib
 ```typescript
 export type ErrorCode =
   | "empty_input" | "unauthorized" | "rate_limited"
-  | "network" | "secret" | "unexpected";
+  | "network" | "storage" | "unexpected";
 
 export interface CommandError {
   code: ErrorCode;   // 分岐に使う（unauthorized → 再認証へ 等）
@@ -133,7 +134,8 @@ export interface CommandError {
 | UI             | React 19 + TypeScript + Vite                                    |
 | ルーティング   | React Router v7（ライブラリモード・createMemoryRouter）         |
 | サーバ状態     | TanStack Query                                                  |
-| スタイリング   | Tailwind CSS + shadcn/ui（`components/ui` / `lib/utils` 規約）  |
+| スタイリング   | Tailwind CSS v4 + 自作グラス部品（Liquid Glass・ダーク固定。`components/ui` / `lib/utils` 規約。shadcn/ui は不採用） |
+| フォント       | 英語・日本語ともヒラギノ角ゴ（Hiragino Kaku Gothic）で統一。無い環境は sans-serif にフォールバック。OS同梱フォント前提で同梱なし |
 | グラフ（将来） | Recharts（Epic C）                                              |
 | グローバル状態 | 採用しない（必要になってから検討）                              |
 | パスエイリアス | `@/` → `src/`（tsconfig + vite に設定）                         |
@@ -145,6 +147,8 @@ export interface CommandError {
 - hooks は `useXxx`。mutation は `useSaveCredentials` のように動詞を含める。
 - `api.ts` の関数名はバックエンドの usecase メソッドに対応（`saveCredentials` → `save_credentials` → `CredentialUseCases::save`）。
 
-## 11. 実装状況（2026-06-02 時点）
+## 11. 実装状況（2026-06-19 時点）
 
-- 未着手。実装順: 依存追加（react-router / @tanstack/react-query / tailwind / shadcn-ui）→ `lib/ipc` → `features/credential` → `app/`（router + ガード）→ 雛形デモUI削除（Rust 側 `greet` コマンドも削除）。
+- 完了: 依存追加（react-router / @tanstack/react-query / tailwind v4）、`lib/ipc`（invoke ラッパ＋型）、`app/`（provider / router / index 骨格）。
+- 完了: **デザイン土台**＝ `index.css` の Liquid Glass トークン＋グラスCSS（ダーク固定）、`components/ui` の自作グラス部品（GlassBackground/Card/Button/Input/Field/Badge/Switch）、`lib/utils.ts` の `cn()`、フォント（英語=Consolas / 日本語=ヒラギノ角ゴ）。`home.tsx` は当面その動作確認ギャラリー（仮）。
+- 次: `features/credential`（api/hooks/OnboardingForm）→ `app/router` に `/onboarding` ＋ `RequireCredentials` ガード → 雛形デモUI削除（Rust 側 `greet` コマンドも削除）。
