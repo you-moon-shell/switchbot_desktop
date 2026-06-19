@@ -12,11 +12,17 @@ dist
 dist-ssr
 *.local
 
+# Environment variables（秘密を絶対にコミットしないため。テンプレは .env.example で共有）
+.env
+.env.*
+!.env.example
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
 .idea
 .DS_Store
+Thumbs.db
 *.suo
 *.ntvs*
 *.njsproj

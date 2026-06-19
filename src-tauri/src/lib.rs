@@ -13,12 +13,6 @@ use repositories::{KeyringSecretRepository, SecretRepository};
 use state::AppState;
 use usecases::CredentialUseCases;
 
-// TODO: オンボーディング画面の実装が終わったら削除する（雛形のデモコマンド）
-#[tauri::command]
-fn greet(name: &str) -> String {
-    format!("Hello, {}! You've been greeted from Rust!", name)
-}
-
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     // ── DI: 具象実装（gateway / repository）を生成し、抽象（trait）として usecase に注入する ──
@@ -32,7 +26,6 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .manage(app_state)
         .invoke_handler(tauri::generate_handler![
-            greet,
             commands::credential::save_credentials,
             commands::credential::has_credentials,
             commands::credential::delete_credentials,
