@@ -6,7 +6,7 @@
 | 作成日     | 2026-06-02 / 最終更新 2026-06-19                                        |
 | 対象       | Tauri v2 の Rustコア（バックエンド）。フロント(WebView)は文脈として記載 |
 | スタイル   | 依存性逆転（trait境界）＋ 責務別構成（repositories / gateways）         |
-| 関連       | `docs/spec/epic-a-onboarding-auth/requirements.md`                      |
+| 関連       | `../epics/a-onboarding-auth/requirements.md` / `frontend.md`            |
 
 ## 1. 目的・方針
 
@@ -70,7 +70,7 @@ SwitchBotデスクトップアプリの Rustコアを、**外界（HTTP API・SQ
 
 ## 4. ディレクトリ構成
 
-凡例: ✅ = 実装済み（Epic A）、⬜ = 将来実装（Epic B〜F）
+凡例: ✅ = 実装済み（Epic A）、⬜ = 将来実装（Epic B〜E ＝ デバイス/シーン、または Backlog）
 
 各責務フォルダは **`<役割>.rs`＝契約(trait)** と **`<技術>_<役割>.rs`＝具象(impl)** を同居させる。
 
@@ -107,7 +107,7 @@ src-tauri/src/
 │   └─ error.rs               ✅ CommandError { code, message } / ErrorCode（Serialize、全コマンド共通の汎用型）
 ├─ state.rs                   ✅ AppState（DI済み usecase の入れ物。manage で登録）
 ├─ lib.rs                     ✅ Composition Root（DI配線）+ Builder 起動
-├─ clock.rs                   ⬜ trait Clock + 実装（時刻の抽象。永続化でもAPIでもない能力。Epic D で必要なら。§12）
+├─ clock.rs                   ⬜ trait Clock + 実装（時刻の抽象。永続化でもAPIでもない能力。Backlog（自動化）で必要なら。§12）
 ├─ poller.rs                  ⬜ 【単一】定期取得 → DB保存 → イベント発行（駆動アダプタ）
 └─ scheduler.rs               ⬜ tokio-cron-scheduler（時刻/条件トリガ。駆動アダプタ）
 ```
@@ -219,16 +219,25 @@ sign = upper( base64( HMAC-SHA256( key = secret, msg = token + t + nonce ) ) )
 
 ## 9. Epic ↔ モジュール対応
 
-| Epic             | 主に触るモジュール                                                                                                     |
-| ---------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| **A 認証**       | `commands(credential)` `usecases/credential` `gateways/switchbot` `repositories/secret`                                |
-| B デバイス操作   | `usecases/device` `gateways/switchbot`                                                                                 |
-| C センサー可視化 | `poller` `usecases/telemetry` `repositories/telemetry` `gateways/events(EventPublisher)`                               |
-| D 自動化         | `scheduler` `usecases/automation` `repositories/automation` `clock(必要なら)` `poller(条件)`                          |
-| E 常駐           | `lib.rs`（tray/ウィンドウ生存管理）                                                                                    |
-| F 横断           | `gateways/switchbot`（レート管理） `gateways/events` エラー設計                                                        |
+| Epic | 主に触るモジュール | 状態 |
+| --- | --- | --- |
+| **A 認証** | `commands(credential)` `usecases/credential` `gateways/switchbot` `repositories/secret` | 実装済 |
+| **B デバイス状態** | `commands(device)` `usecases/device`（取得系） `gateways/switchbot`（`GET /devices`・`/status`） | 次 |
+| **C デバイス基本操作** | `usecases/device`（共通コマンド ON/OFF） `gateways/switchbot`（`POST /commands`） | B の後 |
+| **D デバイス個別操作** | `usecases/device`（機種別コマンド） `gateways/switchbot` | C の後 |
+| **E シーン** | `commands(scene)` `usecases/scene` `gateways/switchbot`（`GET /scenes`・`execute`） | D の後 |
 
-> **Epic A を最初にやる理由**：A は `switchbot_gateway`＋署名＋`secret_repository`＋invoke/listen の土台を作る部分。B〜F は全部この土台の上に乗る。
+> **Epic A を最初にやる理由**：A は `switchbot_gateway`＋署名＋`secret_repository`＋invoke/listen の土台。B 以降はこの上に乗る。**B（読み取り）→ C（共通の書き込み）→ D（機種別）→ E（シーン）**とリスク・作業量が段階的に増える順。
+
+### Backlog（Epic 化しない＝当面やらない）
+
+| 項目 | 関連モジュール（将来） |
+| --- | --- |
+| センサー可視化 | `poller` `usecases/telemetry` `repositories/telemetry` `gateways/events(EventPublisher)` |
+| 自動化 | `scheduler` `usecases/automation` `repositories/automation` `clock` `poller(条件)` |
+| メニューバー常駐 | `lib.rs`（tray / ウィンドウ生存管理） |
+| 設定画面（資格情報の更新） | `commands(credential)` |
+| 横断 | レート制限の作り込み・`tracing` ログ・自動更新・Windows 対応 |
 
 ## 10. 技術スタック（バックエンド関連）
 
@@ -237,9 +246,9 @@ sign = upper( base64( HMAC-SHA256( key = secret, msg = token + t + nonce ) ) )
 | 枠組み              | Tauri v2（Rustコア + WebView）                                          |
 | HTTP/署名           | reqwest(timeout 10s) + hmac + sha2 + base64 + uuid + serde / serde_json |
 | 抽象(trait)の非同期 | async-trait                                                             |
-| 永続化              | sqlx（SQLite）※未導入（Epic C で導入）                                  |
+| 永続化              | sqlx（SQLite）※未導入（Backlog: 可視化で導入）                          |
 | 機密                | keyring v3（features: apple-native / windows-native）                   |
-| スケジューラ        | tokio-cron-scheduler ※未導入（Epic D で導入）                           |
+| スケジューラ        | tokio-cron-scheduler ※未導入（Backlog: 自動化で導入）                   |
 | エラー              | thiserror（層ごとのエラー型を境界で翻訳。フロントへは `CommandError`）  |
 | テスト              | cargo test（`#[tokio::test]` 用に dev-dependencies へ tokio macros/rt） |
 
@@ -262,8 +271,8 @@ sign = upper( base64( HMAC-SHA256( key = secret, msg = token + t + nonce ) ) )
 
 | 抽象 | 置き場所 | 導入時期 | 理由 |
 | --- | --- | --- | --- |
-| `trait EventPublisher` | `gateways/events/` | **Epic C** | ポーラー後の「フロントへ通知」も外界（WebViewへの送信窓口）。usecase が Tauri の `emit` を直接呼ぶとコアが Tauri に依存してしまうため、通知も trait + 具象（`gateways/events/` = Tauri emit 実装）のペアにする。テストでは InMemory 実装で「通知されたか」を検証できる |
-| `trait Clock` | `clock.rs`（トップレベル） | **Epic D**（必要なら） | 自動化のクールダウン/ヒステリシスは時刻で分岐するロジック。`SystemTime::now()` をコアで直接呼ぶと「30分後」をテストできない。FakeClock で時間を進めて検証する。永続化でもAPI窓口でもない「能力」の抽象なので、repositories/gateways の2分類には入れず小さなトップレベル module に置く。※署名の `t` は外界との約束なので具象内の実時刻のままで良い——**コアのロジックが時刻で分岐するときだけ** trait 化する |
+| `trait EventPublisher` | `gateways/events/` | **Backlog**（可視化） | ポーラー後の「フロントへ通知」も外界（WebViewへの送信窓口）。usecase が Tauri の `emit` を直接呼ぶとコアが Tauri に依存してしまうため、通知も trait + 具象（`gateways/events/` = Tauri emit 実装）のペアにする。テストでは InMemory 実装で「通知されたか」を検証できる |
+| `trait Clock` | `clock.rs`（トップレベル） | **Backlog**（自動化・必要なら） | 自動化のクールダウン/ヒステリシスは時刻で分岐するロジック。`SystemTime::now()` をコアで直接呼ぶと「30分後」をテストできない。FakeClock で時間を進めて検証する。永続化でもAPI窓口でもない「能力」の抽象なので、repositories/gateways の2分類には入れず小さなトップレベル module に置く。※署名の `t` は外界との約束なので具象内の実時刻のままで良い——**コアのロジックが時刻で分岐するときだけ** trait 化する |
 
 ### 駆動側の trait を作らない（決定済み）
 
@@ -291,7 +300,7 @@ sign = upper( base64( HMAC-SHA256( key = secret, msg = token + t + nonce ) ) )
 - テスト 6本グリーン：
   - 署名が公式 Python サンプルと一致（`signature.rs`）
   - CredentialUseCases のテスト×5（AC-1: 検証成功で保存・トリム / AC-2: 401は保存しない / AC-5: ネット断は401と区別 / 空入力はAPI呼ばず拒否 / exists・delete の状態反映）— Fake注入により実トークン・実キーチェーン不要
-- 未着手：フロント（オンボーディング画面）、`tracing` によるログ、Epic B〜F の全モジュール。
+- 未着手：`tracing` によるログ、Epic B〜E（デバイス状態/基本操作/個別操作/シーン）＋ Backlog の全モジュール。（フロントのオンボーディング画面は実装済み）
 
 ## 付録：Rust 初心者メモ
 

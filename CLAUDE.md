@@ -10,8 +10,9 @@
 
 ## アーキテクチャ
 
-- バックエンド（Rust コア）の設計: `docs/spec/backend-architecture.md`
-- フロントエンド（React/TS）の設計: `docs/spec/frontend-architecture.md`
+- 仕様の入口（索引）: `docs/spec/README.md`
+- バックエンド（Rust コア）の設計: `docs/spec/architecture/backend.md`
+- フロントエンド（React/TS）の設計: `docs/spec/architecture/frontend.md`
 - スタイルは **依存性逆転（trait 境界）＋ 責務別構成**。
   - `usecases/` … アプリのロジック。**trait にだけ依存**し、具象実装は知らない。
   - `gateways/` … 外部API（SwitchBot クラウド）への窓口。契約 trait と具象を同居。

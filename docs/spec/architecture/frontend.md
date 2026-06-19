@@ -6,7 +6,7 @@
 | 作成日     | 2026-06-02                                                               |
 | 対象       | Tauri v2 の WebView 側（React + TypeScript）                             |
 | スタイル   | feature-based（[bulletproof-react](https://github.com/alan2207/bulletproof-react) 準拠） |
-| 関連       | `backend-architecture.md` / `epic-a-onboarding-auth/requirements.md`     |
+| 関連       | `backend.md` / `../epics/a-onboarding-auth/requirements.md`              |
 
 ## 1. 目的・方針
 
@@ -77,9 +77,9 @@ app（routes 含む） → features → components / hooks / lib
 | -------------- | -------------------- | -------------------------------------- |
 | `/onboarding`  | `onboarding.tsx`     | Epic A。資格情報あり → `/` へ redirect |
 | `/`            | `home.tsx`           | 仮置き。将来ダッシュボード             |
-| `/devices`     | （将来）             | Epic B                                 |
-| `/automations` | （将来）             | Epic D                                 |
-| `/settings`    | （将来）             | 資格情報の更新・削除はここ（A6）       |
+| `/devices`     | （将来）             | Epic B〜E（デバイス状態/操作/シーン）  |
+| `/automations` | （将来）             | Backlog（自動化）                      |
+| `/settings`    | （将来）             | Backlog（資格情報の更新）。削除は実装済 |
 
 - **ガード**: `RequireCredentials` が `useHasCredentials()`（TanStack Query）を参照。
   - `true` → `<Outlet/>`、`false` → `<Navigate to="/onboarding"/>`、ロード中 → スプラッシュ。
@@ -96,7 +96,7 @@ app（routes 含む） → features → components / hooks / lib
 | `useSaveCredentials()`  | mutation | `save_credentials`   | 成功時 `has_credentials` を invalidate |
 | `useDeleteCredentials()`| mutation | `delete_credentials` | 同上（将来 /settings から使用）        |
 
-- 将来の listen（Epic C: `device-status-updated` 等）は `lib/ipc/events.ts` に型付きラッパを追加し、feature の hooks が購読して Query キャッシュへ書き込む。
+- 将来の listen（Backlog の可視化: `device-status-updated` 等）は `lib/ipc/events.ts` に型付きラッパを追加し、feature の hooks が購読して Query キャッシュへ書き込む。
 
 ## 7. IPC 境界とエラー処理
 
@@ -119,13 +119,17 @@ export interface CommandError {
 
 ## 8. Epic ↔ feature 対応
 
-| Epic             | feature                | バックエンドの対応                  |
-| ---------------- | ---------------------- | ----------------------------------- |
-| **A 認証**       | `features/credential`  | `usecases/credential.rs`            |
-| B デバイス操作   | `features/device`      | `usecases/device.rs`（将来）        |
-| C センサー可視化 | `features/telemetry`   | `usecases/telemetry.rs`（将来）     |
-| D 自動化         | `features/automation`  | `usecases/automation.rs`（将来）    |
-| E 常駐           | （トレイは Rust 側）   | `lib.rs`                            |
+| Epic | feature | バックエンドの対応 |
+| --- | --- | --- |
+| **A 認証** | `features/credential` | `usecases/credential.rs`（実装済） |
+| **B デバイス状態** | `features/device`（一覧・状態表示） | `usecases/device`（取得系） |
+| **C デバイス基本操作** | `features/device`（ON/OFF 等） | `usecases/device`（共通コマンド） |
+| **D デバイス個別操作** | `features/device`（機種別UI） | `usecases/device`（機種別コマンド） |
+| **E シーン** | `features/scene` | `usecases/scene` |
+
+### Backlog（feature 化しない＝当面やらない）
+
+センサー可視化（`features/telemetry`）・自動化（`features/automation`）・メニューバー常駐（Rust 側 tray）・設定画面（資格情報の更新）。
 
 ## 9. 技術スタック
 
@@ -136,7 +140,7 @@ export interface CommandError {
 | サーバ状態     | TanStack Query                                                  |
 | スタイリング   | Tailwind CSS v4 + 自作グラス部品（Liquid Glass・ダーク固定。`components/ui` / `lib/utils` 規約。shadcn/ui は不採用） |
 | フォント       | 英語・日本語ともヒラギノ角ゴ（Hiragino Kaku Gothic）で統一。無い環境は sans-serif にフォールバック。OS同梱フォント前提で同梱なし |
-| グラフ（将来） | Recharts（Epic C）                                              |
+| グラフ（将来） | Recharts（Backlog: 可視化）                                     |
 | グローバル状態 | 採用しない（必要になってから検討）                              |
 | パスエイリアス | `@/` → `src/`（tsconfig + vite に設定）                         |
 
