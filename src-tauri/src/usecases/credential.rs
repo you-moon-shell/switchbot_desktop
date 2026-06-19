@@ -2,16 +2,17 @@ use std::sync::Arc;
 
 use thiserror::Error;
 
+use crate::gateways::{GatewayError, SwitchBotGateway};
 use crate::models::Credentials;
-use crate::ports::{GatewayError, SecretStore, SecretStoreError, SwitchBotGateway};
+use crate::repositories::{SecretRepository, SecretRepositoryError};
 
 /// 認証まわりのユースケース（要件 Epic A）。
 ///
-/// 具象には依存せず、2つの port（trait）にだけ依存する。
-/// 本番は SwitchBotApiGateway + KeyringSecretStore、テストは Fake を注入する。
+/// 具象には依存せず、2つの抽象（trait）にだけ依存する。
+/// 本番は SwitchBotApiGateway + KeyringSecretRepository、テストは Fake を注入する。
 pub struct CredentialUseCases {
     gateway: Arc<dyn SwitchBotGateway>,
-    secrets: Arc<dyn SecretStore>,
+    secrets: Arc<dyn SecretRepository>,
 }
 
 /// 認証ユースケースのエラー。
@@ -27,11 +28,11 @@ pub enum CredentialError {
 
     /// キーチェーン操作に失敗。
     #[error(transparent)]
-    Secret(#[from] SecretStoreError),
+    Secret(#[from] SecretRepositoryError),
 }
 
 impl CredentialUseCases {
-    pub fn new(gateway: Arc<dyn SwitchBotGateway>, secrets: Arc<dyn SecretStore>) -> Self {
+    pub fn new(gateway: Arc<dyn SwitchBotGateway>, secrets: Arc<dyn SecretRepository>) -> Self {
         Self { gateway, secrets }
     }
 
@@ -109,21 +110,21 @@ mod tests {
         }
     }
 
-    /// 偽の SecretStore。キーチェーンの代わりにメモリ上の変数に保存する。
+    /// 偽の SecretRepository。キーチェーンの代わりにメモリ上の変数に保存する。
     #[derive(Default)]
-    struct InMemorySecretStore {
+    struct InMemorySecretRepository {
         saved: Mutex<Option<Credentials>>,
     }
 
-    impl SecretStore for InMemorySecretStore {
-        fn save(&self, creds: &Credentials) -> Result<(), SecretStoreError> {
+    impl SecretRepository for InMemorySecretRepository {
+        fn save(&self, creds: &Credentials) -> Result<(), SecretRepositoryError> {
             *self.saved.lock().unwrap() = Some(creds.clone());
             Ok(())
         }
-        fn load(&self) -> Result<Option<Credentials>, SecretStoreError> {
+        fn load(&self) -> Result<Option<Credentials>, SecretRepositoryError> {
             Ok(self.saved.lock().unwrap().clone())
         }
-        fn delete(&self) -> Result<(), SecretStoreError> {
+        fn delete(&self) -> Result<(), SecretRepositoryError> {
             *self.saved.lock().unwrap() = None;
             Ok(())
         }
@@ -132,16 +133,11 @@ mod tests {
     /// AC-1相当: 正しい資格情報 → 保存される。前後の空白はトリムされる。
     #[tokio::test]
     async fn valid_credentials_are_trimmed_and_saved() {
-        let store = Arc::new(InMemorySecretStore::default());
-        let usecase = CredentialUseCases::new(
-            Arc::new(FakeGateway::new(Behavior::Success)),
-            store.clone(),
-        );
+        let store = Arc::new(InMemorySecretRepository::default());
+        let usecase =
+            CredentialUseCases::new(Arc::new(FakeGateway::new(Behavior::Success)), store.clone());
 
-        usecase
-            .save("  tok  ", "\tsec\n")
-            .await
-            .unwrap();
+        usecase.save("  tok  ", "\tsec\n").await.unwrap();
 
         let saved = store.saved.lock().unwrap().clone().unwrap();
         assert_eq!(saved.token, "tok");
@@ -151,7 +147,7 @@ mod tests {
     /// AC-2: 401 → エラーになり、保存されない。
     #[tokio::test]
     async fn unauthorized_credentials_are_not_saved() {
-        let store = Arc::new(InMemorySecretStore::default());
+        let store = Arc::new(InMemorySecretRepository::default());
         let usecase = CredentialUseCases::new(
             Arc::new(FakeGateway::new(Behavior::Unauthorized)),
             store.clone(),
@@ -169,7 +165,7 @@ mod tests {
     /// AC-5相当: ネットワーク断 → 401 とは別のエラーになり、保存されない。
     #[tokio::test]
     async fn network_error_is_distinguished_and_not_saved() {
-        let store = Arc::new(InMemorySecretStore::default());
+        let store = Arc::new(InMemorySecretRepository::default());
         let usecase = CredentialUseCases::new(
             Arc::new(FakeGateway::new(Behavior::NetworkDown)),
             store.clone(),
@@ -190,7 +186,7 @@ mod tests {
         let gateway = Arc::new(FakeGateway::new(Behavior::Success));
         let usecase = CredentialUseCases::new(
             gateway.clone(),
-            Arc::new(InMemorySecretStore::default()),
+            Arc::new(InMemorySecretRepository::default()),
         );
 
         let result = usecase.save("   ", "sec").await;
@@ -202,11 +198,9 @@ mod tests {
     /// A1/A5: exists は保存状態を反映する。A6: delete で消える。
     #[tokio::test]
     async fn exists_and_delete_reflect_store_state() {
-        let store = Arc::new(InMemorySecretStore::default());
-        let usecase = CredentialUseCases::new(
-            Arc::new(FakeGateway::new(Behavior::Success)),
-            store.clone(),
-        );
+        let store = Arc::new(InMemorySecretRepository::default());
+        let usecase =
+            CredentialUseCases::new(Arc::new(FakeGateway::new(Behavior::Success)), store.clone());
 
         assert!(!usecase.exists().unwrap());
 

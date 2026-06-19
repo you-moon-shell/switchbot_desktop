@@ -4,8 +4,8 @@ use async_trait::async_trait;
 
 use super::constants::BASE_URL;
 use super::signature::build_signed_headers;
+use super::{GatewayError, SwitchBotGateway};
 use crate::models::Credentials;
-use crate::ports::{GatewayError, SwitchBotGateway};
 
 /// SwitchBot API の共通レスポンス（必要なフィールドだけを写し取る）。
 /// 仕様: 成功時は statusCode = 100。それ以外はエラー。

@@ -1,16 +1,15 @@
-// アプリのモジュール（ヘキサゴナル構成）
-pub mod adapters;
+// アプリのモジュール（依存は内向き。外界は責務別に repositories / gateways へ集約）
 pub mod commands;
+pub mod gateways;
 pub mod models;
-pub mod ports;
+pub mod repositories;
 pub mod state;
 pub mod usecases;
 
 use std::sync::Arc;
 
-use adapters::secret::KeyringSecretStore;
-use adapters::switchbot::SwitchBotApiGateway;
-use ports::{SecretStore, SwitchBotGateway};
+use gateways::{SwitchBotApiGateway, SwitchBotGateway};
+use repositories::{KeyringSecretRepository, SecretRepository};
 use state::AppState;
 use usecases::CredentialUseCases;
 
@@ -22,9 +21,9 @@ fn greet(name: &str) -> String {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    // ── DI: 具象 adapter を生成し、抽象（port）として usecase に注入する ──
+    // ── DI: 具象実装（gateway / repository）を生成し、抽象（trait）として usecase に注入する ──
     let gateway: Arc<dyn SwitchBotGateway> = Arc::new(SwitchBotApiGateway::new());
-    let secrets: Arc<dyn SecretStore> = Arc::new(KeyringSecretStore::new());
+    let secrets: Arc<dyn SecretRepository> = Arc::new(KeyringSecretRepository::new());
     let app_state = AppState {
         credential: CredentialUseCases::new(gateway, secrets),
     };

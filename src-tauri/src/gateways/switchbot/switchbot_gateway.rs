@@ -3,9 +3,9 @@ use thiserror::Error;
 
 use crate::models::Credentials;
 
-/// SwitchBot クラウド API への窓口（抽象 = port）。
+/// SwitchBot クラウド API への窓口（抽象 = trait）。
 ///
-/// 具象実装は `adapters/switchbot`（reqwest + HMAC 署名）に置く。
+/// 具象実装は同じ `gateways/switchbot`（reqwest + HMAC 署名）に置く。
 /// usecases はこの trait にだけ依存し、HTTP や署名の詳細は知らない。
 #[async_trait]
 pub trait SwitchBotGateway: Send + Sync {

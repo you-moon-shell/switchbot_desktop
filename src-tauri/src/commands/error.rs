@@ -1,6 +1,6 @@
 use serde::Serialize;
 
-use crate::ports::GatewayError;
+use crate::gateways::GatewayError;
 use crate::usecases::CredentialError;
 
 /// フロントへ返すエラー（JSON にシリアライズされて invoke の reject に渡る）。

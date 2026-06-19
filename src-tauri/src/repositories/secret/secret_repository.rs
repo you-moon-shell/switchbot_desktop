@@ -2,24 +2,24 @@ use thiserror::Error;
 
 use crate::models::Credentials;
 
-/// 機密（Token/Secret）の保管庫（抽象 = port）。
+/// 機密（Token/Secret）の保管庫（抽象 = trait）。
 ///
-/// 具象実装は `adapters/secret`（OSキーチェーン）に置く。
+/// 具象実装は同じ `repositories/secret`（OSキーチェーン）に置く。
 /// keyring は同期APIなので、このtraitも同期メソッドにしている。
-pub trait SecretStore: Send + Sync {
+pub trait SecretRepository: Send + Sync {
     /// 資格情報を保存（既存があれば上書き）。
-    fn save(&self, creds: &Credentials) -> Result<(), SecretStoreError>;
+    fn save(&self, creds: &Credentials) -> Result<(), SecretRepositoryError>;
 
     /// 保存済みの資格情報を取得する。未保存なら `Ok(None)`。
-    fn load(&self) -> Result<Option<Credentials>, SecretStoreError>;
+    fn load(&self) -> Result<Option<Credentials>, SecretRepositoryError>;
 
     /// 資格情報を削除する（ログアウト）。
-    fn delete(&self) -> Result<(), SecretStoreError>;
+    fn delete(&self) -> Result<(), SecretRepositoryError>;
 }
 
-/// SecretStore 由来のエラー。
+/// SecretRepository 由来のエラー。
 #[derive(Debug, Error)]
-pub enum SecretStoreError {
+pub enum SecretRepositoryError {
     /// キーチェーンへの読み書きに失敗（OSが拒否した等）。
     #[error("キーチェーンへのアクセスに失敗しました: {0}")]
     Access(String),
