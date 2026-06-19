@@ -2,10 +2,10 @@
 
 | 項目 | 内容 |
 |---|---|
-| ステータス | Approved（Phase 1 完了） |
+| ステータス | Approved（実装済） |
 | 作成日 | 2026-06-01 |
-| スコープ | 本ドキュメントは **Epic A（オンボーディング & 認証）のみ**。Epic B〜F は後続で追加 |
-| 関連 | `design.md`（Phase 2 / 未作成）、`tasks.md`（Phase 3 / 未作成） |
+| スコープ | 本ドキュメントは **Epic A（オンボーディング & 認証）のみ** |
+| 関連 | [仕様インデックス](../../README.md) / [backend](../../architecture/backend.md) / [frontend](../../architecture/frontend.md) |
 
 ## 1. 概要・目的
 
@@ -67,7 +67,7 @@ SwitchBot公式クラウドAPI v1.1 を利用するための **API資格情報�
 - **NFR-A3**: ログ出力時は Token/Secret をマスキングし、平文を残さない。
 - **NFR-A4**: フロントとコアの通信は `invoke`/`listen` のみ。フロントは SwitchBot API を直接呼ばない。
 
-> 署名アルゴリズムの具体（`HMAC-SHA256(secret, token + t + nonce)` を Base64 化等）は **Phase 2（design.md）** で確定する。本ドキュメントは「署名付きで検証・通信する」ことを要件として規定するに留める。
+> 署名アルゴリズムの具体（`HMAC-SHA256(secret, token + t + nonce)` を Base64 化等）は実装で確定済み（[backend §6.3](../../architecture/backend.md)）。本ドキュメントは「署名付きで検証・通信する」ことを要件として規定するに留める。
 
 ## 6. エッジケース
 

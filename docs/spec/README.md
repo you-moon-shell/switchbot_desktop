@@ -9,12 +9,12 @@ SwitchBot デスクトップアプリの仕様置き場。**横断的なアー�
 
 ## エピック
 
-各エピックは `epics/<id>/` 配下に `requirements.md`（→ 必要に応じて `design.md` / `tasks.md`）を置く。
+各エピックは `epics/<id>/` 配下に `requirements.md` を置く。詳細設計・タスク分解の専用ドキュメント（design.md / tasks.md）は作らず、**requirements をベースにコーディングしながら調整**する方針。
 
 | Epic | 内容 | 状態 | ドキュメント |
 | --- | --- | --- | --- |
 | **A** | オンボーディング/認証 | 実装済 | [requirements](epics/a-onboarding-auth/requirements.md) |
-| **B** | デバイス状態（一覧・状態の読み取り） | 次 | （未作成） |
+| **B** | デバイス状態（一覧・状態の読み取り） | 起票（Draft） | [requirements](epics/b-device-status/requirements.md) |
 | **C** | デバイス基本操作（共通 ON/OFF 等） | B の後 | （未作成） |
 | **D** | デバイス個別操作（機種別コマンド） | C の後 | （未作成） |
 | **E** | シーン（一覧・実行） | D の後 | （未作成） |
