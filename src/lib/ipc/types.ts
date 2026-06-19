@@ -15,7 +15,7 @@ export type ErrorCode =
   | "unauthorized"
   | "rate_limited"
   | "network"
-  | "secret"
+  | "storage"
   | "unexpected";
 
 /** 値が CommandError の形をしているかの型ガード */

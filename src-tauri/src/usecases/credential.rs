@@ -16,19 +16,52 @@ pub struct CredentialUseCases {
 }
 
 /// 認証ユースケースのエラー。
+///
+/// gateway 由来のエラーは **この層の語彙に平坦化して**保持する（内側の `GatewayError` を
+/// `Gateway(GatewayError)` のように抱えない）。こうすると外側の `commands` 層は
+/// `GatewayError` を知らずに `CredentialError` だけを見て `ErrorCode` に振り分けられる
+/// ——層をまたいだ深掘りマッチ（`CredentialError::Gateway(GatewayError::..)`）を避けられる。
 #[derive(Debug, Error)]
 pub enum CredentialError {
     /// 入力が空（トリム後）。API を呼ぶまでもなく弾く。
     #[error("トークンとシークレットを入力してください")]
     EmptyInput,
 
-    /// API 検証に失敗（401・ネットワーク等。中のエラーをそのまま透過表示）。
-    #[error(transparent)]
-    Gateway(#[from] GatewayError),
+    /// トークン/シークレットが無効（API 401）。
+    #[error("認証に失敗しました（トークンまたはシークレットが無効です）")]
+    Unauthorized,
 
-    /// キーチェーン操作に失敗。
+    /// API のレート制限超過（429）。
+    #[error("APIのレート制限に達しました")]
+    RateLimited,
+
+    /// ネットワーク不通（正否は不明）。
+    #[error("ネットワークエラー: {0}")]
+    Network(String),
+
+    /// その他の予期しない API エラー。
+    #[error("予期しないエラー: {0}")]
+    Unexpected(String),
+
+    /// 保存層（キーチェーン）の操作に失敗。
+    /// 外側は保存系をすべて 1 つの ErrorCode(storage) に畳むため、Gateway と違い細分化せず透過保持でよい。
     #[error(transparent)]
-    Secret(#[from] SecretRepositoryError),
+    Storage(#[from] SecretRepositoryError),
+}
+
+/// gateway の語彙 → usecase の語彙へ翻訳（＝境界での翻訳）。
+///
+/// この `From` があるおかげで `save()` 内の `?` がそのまま使え、かつ `GatewayError` が
+/// `CredentialError` の外（commands）へ漏れない。
+impl From<GatewayError> for CredentialError {
+    fn from(err: GatewayError) -> Self {
+        match err {
+            GatewayError::Unauthorized => Self::Unauthorized,
+            GatewayError::RateLimited => Self::RateLimited,
+            GatewayError::Network(msg) => Self::Network(msg),
+            GatewayError::Unexpected(msg) => Self::Unexpected(msg),
+        }
+    }
 }
 
 impl CredentialUseCases {
@@ -155,10 +188,7 @@ mod tests {
 
         let result = usecase.save("tok", "sec").await;
 
-        assert!(matches!(
-            result,
-            Err(CredentialError::Gateway(GatewayError::Unauthorized))
-        ));
+        assert!(matches!(result, Err(CredentialError::Unauthorized)));
         assert!(store.saved.lock().unwrap().is_none());
     }
 
@@ -173,10 +203,7 @@ mod tests {
 
         let result = usecase.save("tok", "sec").await;
 
-        assert!(matches!(
-            result,
-            Err(CredentialError::Gateway(GatewayError::Network(_)))
-        ));
+        assert!(matches!(result, Err(CredentialError::Network(_))));
         assert!(store.saved.lock().unwrap().is_none());
     }
 

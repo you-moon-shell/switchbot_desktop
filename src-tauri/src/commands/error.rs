@@ -1,12 +1,12 @@
 use serde::Serialize;
 
-use crate::gateways::GatewayError;
-use crate::usecases::CredentialError;
-
 /// フロントへ返すエラー（JSON にシリアライズされて invoke の reject に渡る）。
 ///
 /// - `code`: フロントが分岐に使う（例: unauthorized なら再認証画面へ）
 /// - `message`: ユーザーに表示する説明文（各層の Display を利用）
+///
+/// 全コマンド共通の「箱」。各コマンド固有の usecase エラー → CommandError への変換
+/// （`From` 実装）は、その変換知識を持つコマンドモジュール側に置く（例: `commands/credential.rs`）。
 #[derive(Debug, Serialize)]
 pub struct CommandError {
     pub code: ErrorCode,
@@ -21,23 +21,6 @@ pub enum ErrorCode {
     Unauthorized,
     RateLimited,
     Network,
-    Secret,
+    Storage,
     Unexpected,
-}
-
-impl From<CredentialError> for CommandError {
-    fn from(err: CredentialError) -> Self {
-        let code = match &err {
-            CredentialError::EmptyInput => ErrorCode::EmptyInput,
-            CredentialError::Gateway(GatewayError::Unauthorized) => ErrorCode::Unauthorized,
-            CredentialError::Gateway(GatewayError::RateLimited) => ErrorCode::RateLimited,
-            CredentialError::Gateway(GatewayError::Network(_)) => ErrorCode::Network,
-            CredentialError::Gateway(GatewayError::Unexpected(_)) => ErrorCode::Unexpected,
-            CredentialError::Secret(_) => ErrorCode::Secret,
-        };
-        Self {
-            code,
-            message: err.to_string(),
-        }
-    }
 }
