@@ -14,6 +14,7 @@
 - 依存は一方向のみ。feature 同士は依存しない。
 - WebView は非特権（バックエンド設計の信頼境界の外）。資格情報そのものには一切触れない。Rust との接点は `invoke` / `listen` の2本だけで、その境界は `lib/ipc` が一手に引き受ける。
 - 見た目は **Liquid Glass（グラスモーフィズム）・ダーク固定**。出典の CodePen UI kit からデザイントークンと部品を抽出し、`index.css`（トークン＋グラスCSS）＋ `components/ui`（自作の軽量グラス部品）に落とす。shadcn/ui は不採用（グラスは CSS 主導で被せる旨味が薄く、依存も増えるため。複雑な a11y プリミティブが要る時だけ Radix を単体採用）。
+- **レスポンシブにしない**：デスクトップの固定ウィンドウ前提。ブレークポイント（`sm:` / `md:` 等）・可変レイアウトは入れない。
 
 ## 2. ディレクトリ構成（bulletproof-react 準拠）
 
@@ -153,6 +154,7 @@ export interface CommandError {
 
 ## 11. 実装状況（2026-06-19 時点）
 
-- 完了: 依存追加（react-router / @tanstack/react-query / tailwind v4）、`lib/ipc`（invoke ラッパ＋型）、`app/`（provider / router / index 骨格）。
-- 完了: **デザイン土台**＝ `index.css` の Liquid Glass トークン＋グラスCSS（ダーク固定）、`components/ui` の自作グラス部品（GlassBackground/Card/Button/Input/Field/Badge/Switch）、`lib/utils.ts` の `cn()`、フォント（英語=Consolas / 日本語=ヒラギノ角ゴ）。`home.tsx` は当面その動作確認ギャラリー（仮）。
-- 次: `features/credential`（api/hooks/OnboardingForm）→ `app/router` に `/onboarding` ＋ `RequireCredentials` ガード → 雛形デモUI削除（Rust 側 `greet` コマンドも削除）。
+- 完了: 依存追加（react-router / @tanstack/react-query / tailwind v4）、`lib/ipc`（invoke ラッパ＋型）、`app/`（provider / router / `RequireCredentials` ガード）。
+- 完了: **デザイン土台**＝ `index.css` の Liquid Glass トークン＋グラスCSS（ダーク固定）、`components/ui` の自作グラス部品（GlassBackground/Card/Button/Input/Field/Badge/Switch）、`lib/utils.ts` の `cn()`、フォント（英語・日本語ともヒラギノ角ゴ）。
+- 完了: **Epic A オンボーディング/認証**＝ `features/credential`（api / hooks / OnboardingForm）＋ `/onboarding` ＋ ガード。`home.tsx` は接続済み画面（ログアウト）。雛形デモUI・Rust 側 `greet` も削除済み。
+- 次: Epic B（デバイス状態）。
