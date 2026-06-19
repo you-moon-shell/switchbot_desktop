@@ -7,12 +7,12 @@ API トークン/シークレットは **OS キーチェーン**にのみ保管�
 
 ## 技術スタック
 
-| 領域 | 採用 |
-| --- | --- |
-| アプリ基盤 | [Tauri v2](https://tauri.app/)（Rust コア + WebView） |
-| フロント | React 19 + TypeScript + Vite / TanStack Query / React Router v7（memory router） |
-| スタイル | Tailwind CSS v4 ＋ 自作グラスモーフィズム UI（ダーク固定） |
-| バックエンド | Rust（reqwest + HMAC 署名、keyring によるキーチェーン保管） |
+| 領域         | 採用                                                                             |
+| ------------ | -------------------------------------------------------------------------------- |
+| アプリ基盤   | [Tauri v2](https://tauri.app/)（Rust コア + WebView）                            |
+| フロント     | React 19 + TypeScript + Vite / TanStack Query / React Router v7（memory router） |
+| スタイル     | Tailwind CSS v4 ＋ 自作グラスモーフィズム UI（ダーク固定）                       |
+| バックエンド | Rust（reqwest + HMAC 署名、keyring によるキーチェーン保管）                      |
 
 ## アーキテクチャ
 
@@ -24,27 +24,19 @@ API トークン/シークレットは **OS キーチェーン**にのみ保管�
 
 ## 開発
 
-### 前提
-- Rust（stable）/ Node.js / pnpm
-- macOS（現状の対象。Windows 対応は Backlog）
-- 推奨 IDE: VS Code + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
-
 ### セットアップ & 起動
+
 ```sh
 pnpm install
 pnpm tauri dev      # ネイティブウィンドウで起動（ホットリロード）
 ```
 
 ### よく使うコマンド
-| 目的 | コマンド |
-| --- | --- |
-| フロント開発サーバ（ブラウザ） | `pnpm dev` |
-| 本番ビルド（アプリ） | `pnpm tauri build` |
-| Rust テスト | `cd src-tauri && cargo test` |
-| Rust 整形 / Lint | `cd src-tauri && cargo fmt && cargo clippy` |
-| 型チェック（フロント） | `pnpm exec tsc --noEmit` |
 
-## セキュリティ方針
-
-- 機密（トークン/シークレット）は OS キーチェーンにのみ保存し、WebView・ログ・DB・設定ファイルへは一切書き出さない。
-- HMAC 署名・HTTP 通信・キーチェーン操作はすべて Rust コア内で行い、フロント↔コアは `invoke` / `listen` の 2 本のみ。
+| 目的                           | コマンド                                    |
+| ------------------------------ | ------------------------------------------- |
+| フロント開発サーバ（ブラウザ） | `pnpm dev`                                  |
+| 本番ビルド（アプリ）           | `pnpm tauri build`                          |
+| Rust テスト                    | `cd src-tauri && cargo test`                |
+| Rust 整形 / Lint               | `cd src-tauri && cargo fmt && cargo clippy` |
+| 型チェック（フロント）         | `pnpm exec tsc --noEmit`                    |
