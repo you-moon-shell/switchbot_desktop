@@ -308,3 +308,14 @@ sign = upper( base64( HMAC-SHA256( key = secret, msg = token + t + nonce ) ) )
 - **`Arc<dyn Trait>`** ＝ 「その trait を実装した“何か”への共有ポインタ」。実行時に実装が決まる（型を interface で受ける感覚）。
 - **ディレクトリ＝モジュール**。`repositories/secret/mod.rs` で各ファイルを `pub mod ...;` 宣言し、`repositories/mod.rs`・`lib.rs` の `pub mod repositories;` で読み込む。`pub` を付けたものだけ外から見える（`export` 相当）。
 - **`Result<T, E>`** ＝ 「成功(`Ok`)か失敗(`Err`)」を値で返す。Rustに例外は無い。
+
+### Epic B で増えた概念（2026-06-19）
+
+- **`Vec<T>`** ＝ 可変長配列（TS の `T[]`）。`Vec<Device>` = `Device[]`。台数が不定なので固定長配列ではなく `Vec` を使う。
+- **`Option<T>`** ＝ 「値があるか無いか」（TS の `T | null`）。Rust に `null` は無い。`opt.ok_or(エラー)` で「`None` なら指定のエラーにする」変換ができ、`DeviceUseCases::load_credentials` の「資格情報が未保存 → `Unauthorized`」の畳み込みに使っている。
+- **`?` 演算子 ＋ `From`** ＝ `?` は「`Err` なら即 return、`Ok` なら中身を取り出す」糖衣。さらに `?` は内部で `From` を呼ぶので、`impl From<GatewayError> for DeviceError` を書いておくと `gateway.xxx().await?` が**自動で下層エラーを自層エラーへ翻訳**する（§6.2「境界での平坦化」の実体）。
+- **ジェネリクス `<T>` / 制約 `<T: Bound>`** ＝ 型をパラメータ化する（TS の `<T>` / `<T extends Bound>`）。`T` の与え方は「**引数に出れば渡した値から推論**」「**戻り値だけに出るなら受け取り側の型注釈**（`let body: StatusBody = …`）**か turbofish** `f::<型>()` で指定」。`signed_get<T: DeserializeOwned>` は後者の例。コンパイル時に**型ごとの実体を生成**する（TS のように実行時に消えない）。
+- **静的(`<T>`) vs 動的(`dyn`) ディスパッチ** ＝ ジェネリクスは型ごとに実体生成で速いが型は固定。`dyn Trait` は実行時に実装が決まり差し替え可能。**「1つの実装を型違いで回す」→ `<T>`**（`signed_get`）／**「本番とテストで実装を差し替える」→ `Arc<dyn>`**（usecase が持つ gateway）と使い分ける。
+- **`Arc::clone`** ＝ 中身の複製ではなく**参照カウント +1**（実体は1つを共有）。`gateway.clone()` で同じ gateway を `CredentialUseCases` と `DeviceUseCases` の両方へ配れる。
+- **serde の `#[serde(rename = …)]` / `#[serde(flatten)]`** ＝ JSON ↔ Rust 型の橋渡し。`rename` でキー名（`deviceId` ↔ `device_id`）を対応づけ、`flatten` は「名前付き以外の残りフィールドを丸ごと回収」（TS の `{ a, ...rest }`）。種別別の状態フィールドを `StatusBody.fields` に集めるのに使用。
+- **`#[serde(rename_all = "camelCase")]`**（DTO 側）＝ Rust のスネークケースを JSON 出力時に一括でキャメルケースへ。`DeviceDto` をフロントが自然な `deviceId` 形で受け取れる。
