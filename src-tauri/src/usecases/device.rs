@@ -64,6 +64,9 @@ impl DeviceUseCases {
     ///
     /// 「未保存」と「API 401」はフロントの導線が同じ（要認証）なので、同じ variant に畳む。
     fn load_credentials(&self) -> Result<Credentials, DeviceError> {
+        // load() は Result<Option<Credentials>>。`?` で読み取り失敗（Err）を伝播し、残った
+        // Option を `ok_or` で Result へ変換する: Some(creds)→Ok(creds) / None(未保存)→Err(Unauthorized)。
+        // ＝「読めた中身があるか／無いか」を「成功か／要認証エラーか」に畳む1行。
         self.secrets.load()?.ok_or(DeviceError::Unauthorized)
     }
 
