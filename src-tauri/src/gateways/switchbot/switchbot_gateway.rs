@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use thiserror::Error;
 
-use crate::models::{Credentials, Device, DeviceStatus};
+use crate::models::{Credential, Device, DeviceStatus};
 
 /// SwitchBot クラウド API への窓口（抽象 = trait）。
 ///
@@ -14,17 +14,17 @@ pub trait SwitchBotGateway: Send + Sync {
     /// `GET /v1.1/devices` 相当を署名付きで呼び、成功なら `Ok(())`。
     /// - 認証失敗(401) → `Err(GatewayError::Unauthorized)`
     /// - 到達不可     → `Err(GatewayError::Network(..))`
-    async fn validate_credentials(&self, creds: &Credentials) -> Result<(), GatewayError>;
+    async fn validate_credential(&self, creds: &Credential) -> Result<(), GatewayError>;
 
     /// 物理デバイス一覧を取得する（要件 B1）。`GET /v1.1/devices`。
     ///
     /// 赤外線リモコン（`infraredRemoteList`）は対象外なので含めない。
-    async fn list_devices(&self, creds: &Credentials) -> Result<Vec<Device>, GatewayError>;
+    async fn list_devices(&self, creds: &Credential) -> Result<Vec<Device>, GatewayError>;
 
     /// 1台の現在状態を取得する（要件 B2）。`GET /v1.1/devices/{deviceId}/status`。
     async fn get_device_status(
         &self,
-        creds: &Credentials,
+        creds: &Credential,
         device_id: &str,
     ) -> Result<DeviceStatus, GatewayError>;
 

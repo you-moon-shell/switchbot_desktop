@@ -29,9 +29,9 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .manage(app_state)
         .invoke_handler(tauri::generate_handler![
-            commands::credential::save_credentials,
-            commands::credential::has_credentials,
-            commands::credential::delete_credentials,
+            commands::credential::save_credential,
+            commands::credential::has_credential,
+            commands::credential::delete_credential,
             commands::device::list_devices,
             commands::device::get_device_status,
         ])

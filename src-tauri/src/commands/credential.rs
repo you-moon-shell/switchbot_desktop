@@ -10,7 +10,7 @@ use crate::usecases::CredentialError;
 
 /// オンボーディング: 入力された資格情報を検証し、成功時のみ保存する（A3/A4）。
 #[tauri::command]
-pub async fn save_credentials(
+pub async fn save_credential(
     state: State<'_, AppState>,
     token: String,
     secret: String,
@@ -24,13 +24,13 @@ pub async fn save_credentials(
 
 /// 起動時判定: 資格情報が保存済みか（A1/A5）。bool しか返さない。
 #[tauri::command]
-pub fn has_credentials(state: State<'_, AppState>) -> Result<bool, CommandError> {
+pub fn has_credential(state: State<'_, AppState>) -> Result<bool, CommandError> {
     state.credential.exists().map_err(CommandError::from)
 }
 
 /// 資格情報を削除する（A6）。
 #[tauri::command]
-pub fn delete_credentials(state: State<'_, AppState>) -> Result<(), CommandError> {
+pub fn delete_credential(state: State<'_, AppState>) -> Result<(), CommandError> {
     state.credential.delete().map_err(CommandError::from)
 }
 

@@ -2,11 +2,11 @@ use keyring::Entry;
 
 use super::constants::{ACCOUNT, SERVICE};
 use super::{SecretRepository, SecretRepositoryError};
-use crate::models::Credentials;
+use crate::models::Credential;
 
 /// `SecretRepository` の OSキーチェーン実装（macOS Keychain / Windows Credential Manager）。
 ///
-/// Credentials を JSON 文字列にして1エントリに保存する。
+/// Credential を JSON 文字列にして1エントリに保存する。
 pub struct KeyringSecretRepository;
 
 impl KeyringSecretRepository {
@@ -21,7 +21,7 @@ impl KeyringSecretRepository {
 }
 
 impl SecretRepository for KeyringSecretRepository {
-    fn save(&self, creds: &Credentials) -> Result<(), SecretRepositoryError> {
+    fn save(&self, creds: &Credential) -> Result<(), SecretRepositoryError> {
         let json = serde_json::to_string(creds)
             .map_err(|e| SecretRepositoryError::Decode(e.to_string()))?;
         self.entry()?
@@ -29,7 +29,7 @@ impl SecretRepository for KeyringSecretRepository {
             .map_err(|e| SecretRepositoryError::Access(e.to_string()))
     }
 
-    fn load(&self) -> Result<Option<Credentials>, SecretRepositoryError> {
+    fn load(&self) -> Result<Option<Credential>, SecretRepositoryError> {
         match self.entry()?.get_password() {
             Ok(json) => {
                 let creds = serde_json::from_str(&json)

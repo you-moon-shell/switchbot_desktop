@@ -3,7 +3,7 @@ use std::sync::Arc;
 use thiserror::Error;
 
 use crate::gateways::{GatewayError, SwitchBotGateway};
-use crate::models::Credentials;
+use crate::models::Credential;
 use crate::repositories::{SecretRepository, SecretRepositoryError};
 
 /// 認証まわりのユースケース（要件 Epic A）。
@@ -75,7 +75,7 @@ impl CredentialUseCases {
     /// - 空入力は API を呼ばずに弾く
     /// - 検証失敗（401/ネットワーク）時は一切保存しない
     pub async fn save(&self, token: &str, secret: &str) -> Result<(), CredentialError> {
-        let creds = Credentials {
+        let creds = Credential {
             token: token.trim().to_string(),
             secret: secret.trim().to_string(),
         };
@@ -83,7 +83,7 @@ impl CredentialUseCases {
             return Err(CredentialError::EmptyInput);
         }
 
-        self.gateway.validate_credentials(&creds).await?;
+        self.gateway.validate_credential(&creds).await?;
         self.secrets.save(&creds)?;
         Ok(())
     }
@@ -133,7 +133,7 @@ mod tests {
 
     #[async_trait]
     impl SwitchBotGateway for FakeGateway {
-        async fn validate_credentials(&self, _creds: &Credentials) -> Result<(), GatewayError> {
+        async fn validate_credential(&self, _creds: &Credential) -> Result<(), GatewayError> {
             *self.called.lock().unwrap() = true;
             match self.behavior {
                 Behavior::Success => Ok(()),
@@ -145,14 +145,14 @@ mod tests {
         // 以下2つは credential ユースケースのテストでは使わない（device 側でテスト済み）。
         async fn list_devices(
             &self,
-            _creds: &Credentials,
+            _creds: &Credential,
         ) -> Result<Vec<crate::models::Device>, GatewayError> {
             unimplemented!("credential テストでは使わない")
         }
 
         async fn get_device_status(
             &self,
-            _creds: &Credentials,
+            _creds: &Credential,
             _device_id: &str,
         ) -> Result<crate::models::DeviceStatus, GatewayError> {
             unimplemented!("credential テストでは使わない")
@@ -162,15 +162,15 @@ mod tests {
     /// 偽の SecretRepository。キーチェーンの代わりにメモリ上の変数に保存する。
     #[derive(Default)]
     struct InMemorySecretRepository {
-        saved: Mutex<Option<Credentials>>,
+        saved: Mutex<Option<Credential>>,
     }
 
     impl SecretRepository for InMemorySecretRepository {
-        fn save(&self, creds: &Credentials) -> Result<(), SecretRepositoryError> {
+        fn save(&self, creds: &Credential) -> Result<(), SecretRepositoryError> {
             *self.saved.lock().unwrap() = Some(creds.clone());
             Ok(())
         }
-        fn load(&self) -> Result<Option<Credentials>, SecretRepositoryError> {
+        fn load(&self) -> Result<Option<Credential>, SecretRepositoryError> {
             Ok(self.saved.lock().unwrap().clone())
         }
         fn delete(&self) -> Result<(), SecretRepositoryError> {
@@ -181,7 +181,7 @@ mod tests {
 
     /// AC-1相当: 正しい資格情報 → 保存される。前後の空白はトリムされる。
     #[tokio::test]
-    async fn valid_credentials_are_trimmed_and_saved() {
+    async fn valid_credential_is_trimmed_and_saved() {
         let store = Arc::new(InMemorySecretRepository::default());
         let usecase =
             CredentialUseCases::new(Arc::new(FakeGateway::new(Behavior::Success)), store.clone());
@@ -195,7 +195,7 @@ mod tests {
 
     /// AC-2: 401 → エラーになり、保存されない。
     #[tokio::test]
-    async fn unauthorized_credentials_are_not_saved() {
+    async fn unauthorized_credential_is_not_saved() {
         let store = Arc::new(InMemorySecretRepository::default());
         let usecase = CredentialUseCases::new(
             Arc::new(FakeGateway::new(Behavior::Unauthorized)),

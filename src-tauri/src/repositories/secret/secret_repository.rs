@@ -1,6 +1,6 @@
 use thiserror::Error;
 
-use crate::models::Credentials;
+use crate::models::Credential;
 
 /// 機密（Token/Secret）の保管庫（抽象 = trait）。
 ///
@@ -8,10 +8,10 @@ use crate::models::Credentials;
 /// keyring は同期APIなので、このtraitも同期メソッドにしている。
 pub trait SecretRepository: Send + Sync {
     /// 資格情報を保存（既存があれば上書き）。
-    fn save(&self, creds: &Credentials) -> Result<(), SecretRepositoryError>;
+    fn save(&self, creds: &Credential) -> Result<(), SecretRepositoryError>;
 
     /// 保存済みの資格情報を取得する。未保存なら `Ok(None)`。
-    fn load(&self) -> Result<Option<Credentials>, SecretRepositoryError>;
+    fn load(&self) -> Result<Option<Credential>, SecretRepositoryError>;
 
     /// 資格情報を削除する（ログアウト）。
     fn delete(&self) -> Result<(), SecretRepositoryError>;

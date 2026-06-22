@@ -3,7 +3,7 @@ use std::sync::Arc;
 use thiserror::Error;
 
 use crate::gateways::{GatewayError, SwitchBotGateway};
-use crate::models::{Credentials, Device, DeviceStatus};
+use crate::models::{Credential, Device, DeviceStatus};
 use crate::repositories::{SecretRepository, SecretRepositoryError};
 
 /// デバイス状態の取得ユースケース（要件 Epic B：読み取り専用）。
@@ -63,8 +63,8 @@ impl DeviceUseCases {
     /// 保存済み資格情報をロードする。未保存なら `Unauthorized`（＝再認証導線へ）。
     ///
     /// 「未保存」と「API 401」はフロントの導線が同じ（要認証）なので、同じ variant に畳む。
-    fn load_credentials(&self) -> Result<Credentials, DeviceError> {
-        // load() は Result<Option<Credentials>>。`?` で読み取り失敗（Err）を伝播し、残った
+    fn load_credential(&self) -> Result<Credential, DeviceError> {
+        // load() は Result<Option<Credential>>。`?` で読み取り失敗（Err）を伝播し、残った
         // Option を `ok_or` で Result へ変換する: Some(creds)→Ok(creds) / None(未保存)→Err(Unauthorized)。
         // ＝「読めた中身があるか／無いか」を「成功か／要認証エラーか」に畳む1行。
         self.secrets.load()?.ok_or(DeviceError::Unauthorized)
@@ -72,13 +72,13 @@ impl DeviceUseCases {
 
     /// 物理デバイス一覧を取得する（要件 B1）。
     pub async fn list_devices(&self) -> Result<Vec<Device>, DeviceError> {
-        let creds = self.load_credentials()?;
+        let creds = self.load_credential()?;
         Ok(self.gateway.list_devices(&creds).await?)
     }
 
     /// 指定デバイスの現在状態を取得する（要件 B2）。
     pub async fn get_status(&self, device_id: &str) -> Result<DeviceStatus, DeviceError> {
-        let creds = self.load_credentials()?;
+        let creds = self.load_credential()?;
         Ok(self.gateway.get_device_status(&creds, device_id).await?)
     }
 }
@@ -116,11 +116,11 @@ mod tests {
 
     #[async_trait]
     impl SwitchBotGateway for FakeGateway {
-        async fn validate_credentials(&self, _creds: &Credentials) -> Result<(), GatewayError> {
+        async fn validate_credential(&self, _creds: &Credential) -> Result<(), GatewayError> {
             unimplemented!("device ユースケースのテストでは使わない")
         }
 
-        async fn list_devices(&self, _creds: &Credentials) -> Result<Vec<Device>, GatewayError> {
+        async fn list_devices(&self, _creds: &Credential) -> Result<Vec<Device>, GatewayError> {
             *self.called.lock().unwrap() = true;
             match self.behavior {
                 Behavior::Success => Ok(vec![Device {
@@ -137,7 +137,7 @@ mod tests {
 
         async fn get_device_status(
             &self,
-            _creds: &Credentials,
+            _creds: &Credential,
             device_id: &str,
         ) -> Result<DeviceStatus, GatewayError> {
             *self.called.lock().unwrap() = true;
@@ -162,14 +162,14 @@ mod tests {
     /// 偽の SecretRepository。キーチェーンの代わりにメモリ上の変数で保持する。
     #[derive(Default)]
     struct InMemorySecretRepository {
-        saved: Mutex<Option<Credentials>>,
+        saved: Mutex<Option<Credential>>,
     }
 
     impl InMemorySecretRepository {
         /// 「認証済み」状態（資格情報が保存済み）の repository を作る。
         fn authenticated() -> Self {
             Self {
-                saved: Mutex::new(Some(Credentials {
+                saved: Mutex::new(Some(Credential {
                     token: "tok".to_string(),
                     secret: "sec".to_string(),
                 })),
@@ -178,11 +178,11 @@ mod tests {
     }
 
     impl SecretRepository for InMemorySecretRepository {
-        fn save(&self, creds: &Credentials) -> Result<(), SecretRepositoryError> {
+        fn save(&self, creds: &Credential) -> Result<(), SecretRepositoryError> {
             *self.saved.lock().unwrap() = Some(creds.clone());
             Ok(())
         }
-        fn load(&self) -> Result<Option<Credentials>, SecretRepositoryError> {
+        fn load(&self) -> Result<Option<Credential>, SecretRepositoryError> {
             Ok(self.saved.lock().unwrap().clone())
         }
         fn delete(&self) -> Result<(), SecretRepositoryError> {
@@ -207,7 +207,7 @@ mod tests {
 
     /// B4: 資格情報が未保存なら API を呼ばずに Unauthorized（再認証導線へ）。
     #[tokio::test]
-    async fn missing_credentials_is_unauthorized_without_calling_api() {
+    async fn missing_credential_is_unauthorized_without_calling_api() {
         let gateway = Arc::new(FakeGateway::new(Behavior::Success));
         let usecase = DeviceUseCases::new(
             gateway.clone(),

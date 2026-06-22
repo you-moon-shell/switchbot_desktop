@@ -13,7 +13,7 @@ use hmac::{Hmac, Mac};
 use sha2::Sha256;
 use uuid::Uuid;
 
-use crate::models::Credentials;
+use crate::models::Credential;
 
 type HmacSha256 = Hmac<Sha256>;
 
@@ -25,7 +25,7 @@ pub(super) struct SignedHeaders {
 }
 
 /// 現在時刻と新規 nonce で署名ヘッダを組み立てる。
-pub(super) fn build_signed_headers(creds: &Credentials) -> SignedHeaders {
+pub(super) fn build_signed_headers(creds: &Credential) -> SignedHeaders {
     let t = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .expect("システム時計が1970年より前になっている")

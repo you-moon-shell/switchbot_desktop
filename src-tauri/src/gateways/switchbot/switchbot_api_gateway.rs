@@ -7,7 +7,7 @@ use serde_json::{Map, Value};
 use super::constants::BASE_URL;
 use super::signature::build_signed_headers;
 use super::{GatewayError, SwitchBotGateway};
-use crate::models::{Credentials, Device, DeviceKind, DeviceStatus};
+use crate::models::{Credential, Device, DeviceKind, DeviceStatus};
 
 /// SwitchBot API の共通レスポンス封筒。
 ///
@@ -138,7 +138,7 @@ impl SwitchBotApiGateway {
     /// - 401/403 → `Unauthorized` / 429 → `RateLimited` / その他 → `Unexpected`
     async fn signed_get<T: DeserializeOwned>(
         &self,
-        creds: &Credentials,
+        creds: &Credential,
         path: &str,
     ) -> Result<T, GatewayError> {
         let headers = build_signed_headers(creds);
@@ -181,20 +181,20 @@ impl SwitchBotApiGateway {
 
 #[async_trait]
 impl SwitchBotGateway for SwitchBotApiGateway {
-    async fn validate_credentials(&self, creds: &Credentials) -> Result<(), GatewayError> {
+    async fn validate_credential(&self, creds: &Credential) -> Result<(), GatewayError> {
         // /devices を署名付きで叩けて 100 が返れば資格情報は有効。中身は使わない。
         let _: DevicesBody = self.signed_get(creds, "/devices").await?;
         Ok(())
     }
 
-    async fn list_devices(&self, creds: &Credentials) -> Result<Vec<Device>, GatewayError> {
+    async fn list_devices(&self, creds: &Credential) -> Result<Vec<Device>, GatewayError> {
         let body: DevicesBody = self.signed_get(creds, "/devices").await?;
         Ok(body.into_devices())
     }
 
     async fn get_device_status(
         &self,
-        creds: &Credentials,
+        creds: &Credential,
         device_id: &str,
     ) -> Result<DeviceStatus, GatewayError> {
         let body: StatusBody = self
