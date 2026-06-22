@@ -1,4 +1,4 @@
-use crate::usecases::CredentialUseCases;
+use crate::usecases::{CredentialUseCases, DeviceUseCases};
 
 /// アプリ全体の共有状態。
 ///
@@ -6,4 +6,5 @@ use crate::usecases::CredentialUseCases;
 /// 各 command は `tauri::State<AppState>` 経由でここへアクセスする。
 pub struct AppState {
     pub credential: CredentialUseCases,
+    pub device: DeviceUseCases,
 }

@@ -141,6 +141,22 @@ mod tests {
                 Behavior::NetworkDown => Err(GatewayError::Network("offline".to_string())),
             }
         }
+
+        // 以下2つは credential ユースケースのテストでは使わない（device 側でテスト済み）。
+        async fn list_devices(
+            &self,
+            _creds: &Credentials,
+        ) -> Result<Vec<crate::models::Device>, GatewayError> {
+            unimplemented!("credential テストでは使わない")
+        }
+
+        async fn get_device_status(
+            &self,
+            _creds: &Credentials,
+            _device_id: &str,
+        ) -> Result<crate::models::DeviceStatus, GatewayError> {
+            unimplemented!("credential テストでは使わない")
+        }
     }
 
     /// 偽の SecretRepository。キーチェーンの代わりにメモリ上の変数に保存する。
