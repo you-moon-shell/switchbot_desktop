@@ -4,8 +4,7 @@ import ReactDOM from "react-dom/client";
 import { App } from "@/app";
 import "./index.css";
 
-// デスクトップアプリらしく、右クリックのコンテキストメニューを無効化する。
-// 入力欄（貼り付け等）だけは許可し、body の user-select 方針と揃える。
+// 右クリックメニューを無効化（入力欄だけ許可）。
 window.addEventListener("contextmenu", (event) => {
   const target = event.target as HTMLElement | null;
   if (target?.closest("input, textarea, [contenteditable='true']")) return;

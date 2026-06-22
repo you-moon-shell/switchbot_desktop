@@ -11,10 +11,7 @@ export interface CardProps {
   children?: ReactNode;
 }
 
-/**
- * グラスカード。背景のブロブが面の向こうに透ける。
- * 本文テキストは `.glass-card__body` を付けると半透明の落ち着いた見た目になる。
- */
+/** グラスカード。本文は `.glass-card__body` で半透明に。 */
 export function Card({ label, title, className, children }: CardProps) {
   return (
     <div className={cn("glass glass-card", className)}>
