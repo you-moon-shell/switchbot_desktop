@@ -7,7 +7,8 @@ use serde_json::{Map, Value};
 use super::constants::BASE_URL;
 use super::signature::build_signed_headers;
 use super::{GatewayError, SwitchBotGateway};
-use crate::models::{Credential, Device, DeviceKind, DeviceStatus};
+use crate::models::{Credential, Device, DeviceKind};
+use crate::read_models::DeviceStatus;
 
 /// SwitchBot API の共通レスポンス封筒。
 ///
@@ -100,7 +101,7 @@ enum StatusBody {
 }
 
 impl StatusBody {
-    /// body をドメインの `DeviceStatus` に変換する（IO から切り離した純粋関数）。
+    /// body を読み取り用の `DeviceStatus`（read model）に変換する（IO から切り離した純粋関数）。
     /// 空ケースは `device_id` をパスの値、`device_type` を `"unknown"` で埋める。
     fn into_status(self, device_id: &str) -> DeviceStatus {
         match self {

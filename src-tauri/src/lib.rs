@@ -2,6 +2,7 @@
 pub mod commands;
 pub mod gateways;
 pub mod models;
+pub mod read_models;
 pub mod repositories;
 pub mod state;
 pub mod usecases;

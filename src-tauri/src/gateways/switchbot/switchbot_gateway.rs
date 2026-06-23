@@ -1,7 +1,8 @@
 use async_trait::async_trait;
 use thiserror::Error;
 
-use crate::models::{Credential, Device, DeviceStatus};
+use crate::models::{Credential, Device};
+use crate::read_models::DeviceStatus;
 
 /// SwitchBot クラウド API への窓口（抽象 = trait）。
 ///

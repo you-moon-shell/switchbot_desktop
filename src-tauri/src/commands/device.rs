@@ -9,7 +9,8 @@ use serde_json::{Map, Value};
 use tauri::State;
 
 use super::error::{CommandError, ErrorCode};
-use crate::models::{Device, DeviceKind, DeviceStatus};
+use crate::models::{Device, DeviceKind};
+use crate::read_models::DeviceStatus;
 use crate::state::AppState;
 use crate::usecases::DeviceError;
 

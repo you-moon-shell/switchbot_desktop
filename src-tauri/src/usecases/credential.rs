@@ -3,7 +3,7 @@ use std::sync::Arc;
 use thiserror::Error;
 
 use crate::gateways::{GatewayError, SwitchBotGateway};
-use crate::models::Credential;
+use crate::models::{Credential, EmptyCredential};
 use crate::repositories::{SecretRepository, SecretRepositoryError};
 
 /// 認証まわりのユースケース（要件 Epic A）。
@@ -64,6 +64,14 @@ impl From<GatewayError> for CredentialError {
     }
 }
 
+/// model 層の入力エラー → usecase の語彙へ翻訳（GatewayError と同じく境界で翻訳）。
+/// これで `save()` 内の `?` がそのまま使え、`EmptyCredential` は外へ漏れない。
+impl From<EmptyCredential> for CredentialError {
+    fn from(_: EmptyCredential) -> Self {
+        Self::EmptyInput
+    }
+}
+
 impl CredentialUseCases {
     pub fn new(gateway: Arc<dyn SwitchBotGateway>, secrets: Arc<dyn SecretRepository>) -> Self {
         Self { gateway, secrets }
@@ -75,14 +83,9 @@ impl CredentialUseCases {
     /// - 空入力は API を呼ばずに弾く
     /// - 検証失敗（401/ネットワーク）時は一切保存しない
     pub async fn save(&self, token: &str, secret: &str) -> Result<(), CredentialError> {
-        let creds = Credential {
-            token: token.trim().to_string(),
-            secret: secret.trim().to_string(),
-        };
-        if creds.token.is_empty() || creds.secret.is_empty() {
-            return Err(CredentialError::EmptyInput);
-        }
-
+        // 正規化（トリム）と空チェックは Credential::from_input が担う。
+        // ここを通った creds は常にトリム済み・非空。空入力は API を呼ぶ前に弾かれる。
+        let creds = Credential::from_input(token, secret)?;
         self.gateway.validate_credential(&creds).await?;
         self.secrets.save(&creds)?;
         Ok(())
@@ -154,7 +157,7 @@ mod tests {
             &self,
             _creds: &Credential,
             _device_id: &str,
-        ) -> Result<crate::models::DeviceStatus, GatewayError> {
+        ) -> Result<crate::read_models::DeviceStatus, GatewayError> {
             unimplemented!("credential テストでは使わない")
         }
     }

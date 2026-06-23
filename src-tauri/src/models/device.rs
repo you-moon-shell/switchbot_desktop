@@ -1,5 +1,3 @@
-use serde_json::{Map, Value};
-
 /// デバイス1件（一覧の要素）。
 ///
 /// 物理デバイスと、家電をスマートリモコン化した赤外線リモコン（`infraredRemoteList`）の両方を表す。
@@ -28,21 +26,4 @@ pub struct Device {
 pub enum DeviceKind {
     Physical,
     Remote,
-}
-
-/// デバイスの現在状態。
-///
-/// 種別ごとに項目が異なる（Bot は `power`、Meter は `temperature`/`humidity` …）ため、
-/// **型を固定せず「取得できたフィールドをそのまま」保持する**。これにより未知・未対応の
-/// 種別でもクラッシュせずフォールバック表示できる（要件 §6 エッジケース）。
-///
-/// Epic B は読み取り表示のみで、状態に対するドメインロジック（しきい値判定など）が無い。
-/// よって素通し表現で十分。個別フィールドを型として扱いたくなったら（Epic C/D の操作で
-/// 必要になれば）その時に型を起こす——という段階的拡張の判断。
-#[derive(Debug, Clone, PartialEq)]
-pub struct DeviceStatus {
-    pub device_id: String,
-    pub device_type: String,
-    /// 種別別の状態フィールド（`deviceId` / `deviceType` を除いた残り）。
-    pub fields: Map<String, Value>,
 }

@@ -3,7 +3,8 @@ use std::sync::Arc;
 use thiserror::Error;
 
 use crate::gateways::{GatewayError, SwitchBotGateway};
-use crate::models::{Credential, Device, DeviceStatus};
+use crate::models::{Credential, Device};
+use crate::read_models::DeviceStatus;
 use crate::repositories::{SecretRepository, SecretRepositoryError};
 
 /// デバイス状態の取得ユースケース（要件 Epic B：読み取り専用）。
