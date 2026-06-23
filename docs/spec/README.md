@@ -14,7 +14,7 @@ SwitchBot デスクトップアプリの仕様置き場。**横断的なアー�
 | Epic | 内容 | 状態 | ドキュメント |
 | --- | --- | --- | --- |
 | **A** | オンボーディング/認証 | 実装済 | [requirements](epics/a-onboarding-auth/requirements.md) |
-| **B** | デバイス状態（一覧・状態の読み取り） | 起票（Draft） | [requirements](epics/b-device-status/requirements.md) |
+| **B** | デバイス状態（一覧・状態の読み取り） | 実装済 | [requirements](epics/b-device-status/requirements.md) |
 | **C** | デバイス基本操作（共通 ON/OFF 等） | B の後 | （未作成） |
 | **D** | デバイス個別操作（機種別コマンド） | C の後 | （未作成） |
 | **E** | シーン（一覧・実行） | D の後 | （未作成） |
