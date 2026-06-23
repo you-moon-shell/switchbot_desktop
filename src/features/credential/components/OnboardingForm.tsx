@@ -1,23 +1,20 @@
-import { useState, type FormEvent } from "react";
+import { AlertTriangle } from "lucide-react";
+import { type FormEvent, useState } from "react";
 
 import { Button, Card, Field, Input } from "@/components/ui";
 
-import { useSaveCredentials } from "../hooks";
+import { useSaveCredential } from "../hooks";
 
 /**
- * オンボーディング：Token / Secret 入力フォーム（A2/A3）。
- *
- * 検証〜保存はバックエンドに委譲し、結果は CommandError の message をそのまま表示する
- * （文言の真実は Rust 側）。成功時の画面遷移は書かない —— mutation 成功で
- * has_credentials が invalidate され、ルーターのガードが自動で遷移させる。
+ * Token / Secret 入力フォーム（A2/A3）。検証・保存はバックエンドに委譲。
+ * 成功時の遷移は書かない（mutation 成功 → invalidate → ガードが遷移）。
  */
 export function OnboardingForm() {
   const [token, setToken] = useState("");
   const [secret, setSecret] = useState("");
-  const save = useSaveCredentials();
+  const save = useSaveCredential();
 
-  const canSubmit =
-    token.trim() !== "" && secret.trim() !== "" && !save.isPending;
+  const canSubmit = token.trim() !== "" && secret.trim() !== "" && !save.isPending;
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -28,8 +25,7 @@ export function OnboardingForm() {
   return (
     <Card label="ONBOARDING" title="SwitchBot に接続" className="w-full max-w-md">
       <p className="glass-card__body mt-2 mb-6">
-        SwitchBotアプリ → プロフィール → 設定 → 開発者向けオプション で取得した
-        Token / Secret を入力してください。
+        SwitchBotアプリ → プロフィール → 設定 → 開発者向けオプション で取得した Token / Secret を入力してください。
       </p>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
@@ -59,12 +55,12 @@ export function OnboardingForm() {
 
         {save.isError && (
           <p className="glass-field-error" role="alert">
-            <span aria-hidden="true">⚠</span>
+            <AlertTriangle size={14} aria-hidden="true" />
             {save.error.message}
           </p>
         )}
 
-        <Button type="submit" variant="primary" block disabled={!canSubmit}>
+        <Button type="submit" color="info" block disabled={!canSubmit}>
           {save.isPending ? "検証中…" : "接続して保存"}
         </Button>
       </form>

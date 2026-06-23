@@ -1,24 +1,22 @@
-import { forwardRef } from "react";
 import type { ButtonHTMLAttributes } from "react";
+import { forwardRef } from "react";
 
 import { cn } from "@/lib/utils";
 
-type Variant = "primary" | "ghost" | "accent" | "danger";
+import { type Color, resolveColor } from "./colors";
+
+/** 構造: 塗り（color が効く） / 枠線グラス（ニュートラル）。 */
+type Variant = "solid" | "ghost";
 type Size = "sm" | "md" | "lg";
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+  /** 塗りの色。色名（aqua 等）でも状態（danger 等）でも指定できる（variant=solid のとき有効）。 */
+  color?: Color;
   variant?: Variant;
   size?: Size;
   /** 横幅いっぱいに広げる */
   block?: boolean;
 }
-
-const variantClass: Record<Variant, string> = {
-  primary: "glass-btn--primary",
-  ghost: "glass-btn--ghost",
-  accent: "glass-btn--accent",
-  danger: "glass-btn--danger",
-};
 
 const sizeClass: Record<Size, string> = {
   sm: "glass-btn--sm",
@@ -27,20 +25,17 @@ const sizeClass: Record<Size, string> = {
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
-  { variant = "primary", size = "md", block = false, type = "button", className, ...props },
+  { color = "info", variant = "solid", size = "md", block = false, type = "button", className, ...props },
   ref,
 ) {
+  // ghost は構造（ニュートラル枠）。solid は color で塗る。
+  const colorClass = variant === "ghost" ? "glass-btn--ghost" : `glass-btn--${resolveColor(color)}`;
+
   return (
     <button
       ref={ref}
       type={type}
-      className={cn(
-        "glass-btn",
-        variantClass[variant],
-        sizeClass[size],
-        block && "glass-btn--block",
-        className,
-      )}
+      className={cn("glass-btn", colorClass, sizeClass[size], block && "glass-btn--block", className)}
       {...props}
     />
   );

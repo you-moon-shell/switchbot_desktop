@@ -26,19 +26,13 @@
   --blur-xl: blur(60px);
 
   /* ── Shadows ── */
-  --shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.28),
-    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  --shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.3);
   --shadow-float: 0 20px 60px rgba(0, 0, 0, 0.4), 0 4px 16px rgba(0, 0, 0, 0.2);
   --shadow-glow: 0 0 40px rgba(120, 200, 255, 0.35);
 
   /* ── Reflections ── */
-  --reflection-top: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.4) 0%,
-    rgba(255, 255, 255, 0) 50%
-  );
-  --reflection-inner: inset 0 1px 1px rgba(255, 255, 255, 0.45),
-    inset 0 -1px 1px rgba(0, 0, 0, 0.1);
+  --reflection-top: linear-gradient(135deg, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0) 50%);
+  --reflection-inner: inset 0 1px 1px rgba(255, 255, 255, 0.45), inset 0 -1px 1px rgba(0, 0, 0, 0.1);
 
   /* ── Colour palette ── */
   --accent-aqua: #5ee7df;
@@ -132,20 +126,6 @@ textarea,
   -webkit-user-select: text;
   user-select: text;
   cursor: text;
-}
-
-/* prefers-reduced-motion — モーションを抑制 */
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
-  .scene__blob {
-    animation: none !important;
-  }
 }
 
 /* --------------------------------------------------------------------------
@@ -278,8 +258,10 @@ textarea,
   letter-spacing: 0.04em;
   color: var(--color-text);
   text-decoration: none;
-  transition: transform var(--dur-fast) var(--ease-liquid),
-    box-shadow var(--dur-fast), background var(--dur-fast);
+  transition:
+    transform var(--dur-fast) var(--ease-liquid),
+    box-shadow var(--dur-fast),
+    background var(--dur-fast);
 }
 .glass-btn::before {
   content: "";
@@ -312,55 +294,79 @@ textarea,
 .glass-btn--aqua {
   background: linear-gradient(135deg, rgba(94, 231, 223, 0.5), rgba(59, 130, 246, 0.5));
   border: 1px solid rgba(94, 231, 223, 0.45);
-  box-shadow: 0 4px 24px rgba(94, 231, 223, 0.3), var(--reflection-inner);
+  box-shadow:
+    0 4px 24px rgba(94, 231, 223, 0.3),
+    var(--reflection-inner);
 }
 .glass-btn--aqua:hover {
-  box-shadow: 0 8px 36px rgba(94, 231, 223, 0.5), var(--reflection-inner);
+  box-shadow:
+    0 8px 36px rgba(94, 231, 223, 0.5),
+    var(--reflection-inner);
 }
 
 .glass-btn--violet {
   background: linear-gradient(135deg, rgba(180, 144, 245, 0.5), rgba(247, 168, 196, 0.5));
   border: 1px solid rgba(180, 144, 245, 0.45);
-  box-shadow: 0 4px 24px rgba(180, 144, 245, 0.3), var(--reflection-inner);
+  box-shadow:
+    0 4px 24px rgba(180, 144, 245, 0.3),
+    var(--reflection-inner);
 }
 .glass-btn--violet:hover {
-  box-shadow: 0 8px 40px rgba(180, 144, 245, 0.5), var(--reflection-inner);
+  box-shadow:
+    0 8px 40px rgba(180, 144, 245, 0.5),
+    var(--reflection-inner);
 }
 
 .glass-btn--rose {
   background: linear-gradient(135deg, rgba(247, 168, 196, 0.5), rgba(244, 114, 182, 0.5));
   border: 1px solid rgba(247, 168, 196, 0.45);
-  box-shadow: 0 4px 24px rgba(247, 168, 196, 0.3), var(--reflection-inner);
+  box-shadow:
+    0 4px 24px rgba(247, 168, 196, 0.3),
+    var(--reflection-inner);
 }
 .glass-btn--rose:hover {
-  box-shadow: 0 8px 40px rgba(247, 168, 196, 0.5), var(--reflection-inner);
+  box-shadow:
+    0 8px 40px rgba(247, 168, 196, 0.5),
+    var(--reflection-inner);
 }
 
 .glass-btn--amber {
   background: linear-gradient(135deg, rgba(255, 210, 127, 0.5), rgba(245, 158, 11, 0.5));
   border: 1px solid rgba(255, 210, 127, 0.45);
-  box-shadow: 0 4px 24px rgba(255, 210, 127, 0.3), var(--reflection-inner);
+  box-shadow:
+    0 4px 24px rgba(255, 210, 127, 0.3),
+    var(--reflection-inner);
 }
 .glass-btn--amber:hover {
-  box-shadow: 0 8px 40px rgba(255, 210, 127, 0.5), var(--reflection-inner);
+  box-shadow:
+    0 8px 40px rgba(255, 210, 127, 0.5),
+    var(--reflection-inner);
 }
 
 .glass-btn--lime {
   background: linear-gradient(135deg, rgba(168, 240, 138, 0.5), rgba(74, 222, 128, 0.5));
   border: 1px solid rgba(168, 240, 138, 0.45);
-  box-shadow: 0 4px 24px rgba(168, 240, 138, 0.3), var(--reflection-inner);
+  box-shadow:
+    0 4px 24px rgba(168, 240, 138, 0.3),
+    var(--reflection-inner);
 }
 .glass-btn--lime:hover {
-  box-shadow: 0 8px 40px rgba(168, 240, 138, 0.5), var(--reflection-inner);
+  box-shadow:
+    0 8px 40px rgba(168, 240, 138, 0.5),
+    var(--reflection-inner);
 }
 
 .glass-btn--red {
   background: linear-gradient(135deg, rgba(239, 68, 68, 0.45), rgba(220, 38, 38, 0.45));
   border: 1px solid rgba(239, 68, 68, 0.4);
-  box-shadow: 0 4px 24px rgba(239, 68, 68, 0.25), var(--reflection-inner);
+  box-shadow:
+    0 4px 24px rgba(239, 68, 68, 0.25),
+    var(--reflection-inner);
 }
 .glass-btn--red:hover {
-  box-shadow: 0 8px 36px rgba(239, 68, 68, 0.45), var(--reflection-inner);
+  box-shadow:
+    0 8px 36px rgba(239, 68, 68, 0.45),
+    var(--reflection-inner);
 }
 
 .glass-btn--neutral {
@@ -407,7 +413,9 @@ textarea,
   font-family: var(--font-body);
   font-size: var(--text-md);
   outline: none;
-  transition: border-color var(--dur-fast), box-shadow var(--dur-fast),
+  transition:
+    border-color var(--dur-fast),
+    box-shadow var(--dur-fast),
     background var(--dur-fast);
 }
 .glass-input::placeholder {
@@ -416,7 +424,9 @@ textarea,
 .glass-input:focus {
   border-color: rgba(94, 231, 223, 0.6);
   background: var(--glass-white-md);
-  box-shadow: 0 0 0 3px rgba(94, 231, 223, 0.15), var(--shadow-glass);
+  box-shadow:
+    0 0 0 3px rgba(94, 231, 223, 0.15),
+    var(--shadow-glass);
 }
 .glass-input[aria-invalid="true"] {
   border-color: rgba(239, 68, 68, 0.6);
@@ -541,7 +551,9 @@ textarea,
   background: var(--glass-white);
   backdrop-filter: var(--blur-sm);
   -webkit-backdrop-filter: var(--blur-sm);
-  transition: background var(--dur-fast), border-color var(--dur-fast),
+  transition:
+    background var(--dur-fast),
+    border-color var(--dur-fast),
     box-shadow var(--dur-fast);
   flex-shrink: 0;
 }
@@ -555,13 +567,16 @@ textarea,
   background: rgba(255, 255, 255, 0.65);
   border: 1px solid rgba(255, 255, 255, 0.35);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
-  transition: transform var(--dur-fast) var(--ease-liquid),
+  transition:
+    transform var(--dur-fast) var(--ease-liquid),
     background var(--dur-fast);
 }
 .glass-switch-label input:checked + .glass-switch-track {
   background: rgba(94, 231, 223, 0.3);
   border-color: rgba(94, 231, 223, 0.65);
-  box-shadow: 0 0 14px rgba(94, 231, 223, 0.22), var(--reflection-inner);
+  box-shadow:
+    0 0 14px rgba(94, 231, 223, 0.22),
+    var(--reflection-inner);
 }
 .glass-switch-label input:checked + .glass-switch-track .glass-switch-thumb {
   transform: translateX(20px);
@@ -724,7 +739,9 @@ textarea,
   border-radius: var(--radius-sm);
   color: var(--color-text-muted);
   cursor: pointer;
-  transition: color var(--dur-fast), background var(--dur-fast);
+  transition:
+    color var(--dur-fast),
+    background var(--dur-fast);
 }
 .icon-btn:hover:not(:disabled) {
   color: var(--color-text);
@@ -808,4 +825,22 @@ textarea,
   color: var(--color-text-subtle);
   font-size: var(--text-md);
   font-family: var(--font-display);
+}
+
+/* --------------------------------------------------------------------------
+   prefers-reduced-motion — モーション抑制
+   優先度フラグ（重要度の強制上書き）に頼らない方針。代わりに (1) 所要時間トークンを
+   実質ゼロに再定義してトークン依存のトランジションを止め、(2) 連続アニメは定義より
+   後ろの同特異度ルールで打ち消す（ソース順で勝たせる。ゆえにこのブロックは末尾に置く）。
+   -------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-fast: 0.01ms;
+    --dur-mid: 0.01ms;
+    --dur-slow: 0.01ms;
+  }
+  .scene__blob,
+  .glass-badge__dot--effect {
+    animation: none;
+  }
 }

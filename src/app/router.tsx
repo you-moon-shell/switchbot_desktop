@@ -1,6 +1,6 @@
 import { createMemoryRouter, Navigate, Outlet } from "react-router";
 
-import { useHasCredentials } from "@/features/credential";
+import { useHasCredential } from "@/features/credential";
 
 import HomeRoute from "./routes/home";
 import OnboardingRoute from "./routes/onboarding";
@@ -8,11 +8,11 @@ import OnboardingRoute from "./routes/onboarding";
 /**
  * 資格情報が必要なルートのガード（A1）。
  * 無ければ /onboarding へ。判定中は一瞬だけ空表示（起動直後のスプラッシュ代わり）。
- * 保存/削除の mutation 成功で has_credentials が invalidate され、ここが自動で再判定する
+ * 保存/削除の mutation 成功で has_credential が invalidate され、ここが自動で再判定する
  * ——画面遷移を手で書かないための要。
  */
-function RequireCredentials() {
-  const { data: hasCreds, isPending } = useHasCredentials();
+function RequireCredential() {
+  const { data: hasCreds, isPending } = useHasCredential();
   if (isPending) return null;
   if (!hasCreds) return <Navigate to="/onboarding" replace />;
   return <Outlet />;
@@ -28,7 +28,7 @@ export const router = createMemoryRouter([
     element: <OnboardingRoute />,
   },
   {
-    element: <RequireCredentials />,
+    element: <RequireCredential />,
     children: [
       {
         path: "/",
